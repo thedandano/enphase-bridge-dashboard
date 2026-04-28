@@ -16,6 +16,23 @@ docker compose up -d
 open http://localhost:3000
 ```
 
+**`docker-compose.yml`**
+
+```yaml
+services:
+  dashboard:
+    image: ghcr.io/thedandano/enphase-bridge-dashboard:latest
+    ports:
+      - "3000:80"
+    environment:
+      BRIDGE_API_URL: ${BRIDGE_API_URL:-http://host.docker.internal:8080}
+      BRIDGE_API_KEY: ${BRIDGE_API_KEY:-}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+```
+
+Set `BRIDGE_API_URL` in `.env` (copy from `.env.example`) if your bridge runs on a different host or port.
+
 ## Quick Start (Dev)
 
 ```bash

@@ -1,5 +1,5 @@
 [![CI](https://github.com/thedandano/enphase-bridge-dashboard/actions/workflows/ci.yml/badge.svg)](https://github.com/thedandano/enphase-bridge-dashboard/actions/workflows/ci.yml)
-[![Docker](https://ghcr.io/v2/thedandano/enphase-bridge-dashboard/tags/badge.svg)](https://github.com/thedandano/enphase-bridge-dashboard/pkgs/container/enphase-bridge-dashboard)
+[![Docker](https://ghcr-badge.egpl.dev/thedandano/enphase-bridge-dashboard/latest_tag?color=%2344cc11&label=docker)](https://github.com/thedandano/enphase-bridge-dashboard/pkgs/container/enphase-bridge-dashboard)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
 
 # enphase-bridge-dashboard

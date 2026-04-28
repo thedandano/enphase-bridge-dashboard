@@ -26,12 +26,13 @@ services:
       - "3000:80"
     environment:
       BRIDGE_API_URL: ${BRIDGE_API_URL:-http://host.docker.internal:8080}
+      # BRIDGE_API_KEY is optional — only set this if you enabled api_key auth in the bridge config.toml
       BRIDGE_API_KEY: ${BRIDGE_API_KEY:-}
     extra_hosts:
       - "host.docker.internal:host-gateway"
 ```
 
-Set `BRIDGE_API_URL` in `.env` (copy from `.env.example`) if your bridge runs on a different host or port.
+Set `BRIDGE_API_URL` in `.env` (copy from `.env.example`) if your bridge runs on a different host or port. `BRIDGE_API_KEY` is only needed if the bridge has `api.require_key = true` in its `config.toml` — most local installs leave this disabled.
 
 ## Quick Start (Dev)
 

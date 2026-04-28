@@ -1,0 +1,23 @@
+.banner {
+  background: var(--bg-card);
+  border: 1px solid var(--cyan);
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+  color: var(--fg);
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  margin-bottom: var(--gap);
+}
+
+.twoCol {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--gap);
+  margin: var(--gap) 0;
+}
+
+@media (max-width: 900px) {
+  .twoCol {
+    grid-template-columns: 1fr;
+  }
+}

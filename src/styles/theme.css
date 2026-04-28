@@ -1,0 +1,80 @@
+:root {
+  /* Dracula Pro base */
+  --bg: #22212C;
+  --bg-card: #3A3949;
+  --fg: #F8F8F2;
+  --fg-muted: #7970A9;
+  --selection: #454158;
+  --comment: #7970A9;
+
+  /* Dracula Pro signals (D4 mapping) */
+  --green: #8AFF80;
+  --orange: #FFCA80;
+  --cyan: #80FFEA;
+  --red: #FF9580;
+  --purple: #9580FF;
+  --pink: #FF80BF;
+  --yellow: #FFFF80;
+
+  /* Font stacks */
+  --font-display: 'Bebas Neue', 'Impact', sans-serif;
+  --font-ui: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+
+  /* Spacing / radius */
+  --radius: 6px;
+  --gap: 1rem;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Semantic aliases — use these in components, not raw palette names */
+:root {
+  /* Energy signals (D4) */
+  --signal-production: var(--green);
+  --signal-consumption: var(--orange);
+  --signal-grid-export: var(--cyan);
+  --signal-grid-import: var(--red);
+
+  /* Status indicators */
+  --status-online: var(--green);
+  --status-offline: var(--red);
+  --status-warning: var(--orange);
+
+  /* Text */
+  --text-primary: var(--fg);
+  --text-secondary: var(--fg-muted);
+  --text-accent: var(--purple);
+
+  /* Borders / surfaces */
+  --border: rgba(248, 248, 242, 0.12);
+  --border-subtle: rgba(248, 248, 242, 0.06);
+  --bg-elevated: #44435A;
+
+  /* Interactive */
+  --focus-ring: var(--purple);
+}
+
+/* Text selection */
+::selection {
+  background: var(--selection);
+  color: var(--fg);
+}
+
+/* Respect motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

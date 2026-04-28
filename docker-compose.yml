@@ -1,0 +1,10 @@
+services:
+  dashboard:
+    image: ghcr.io/thedandano/enphase-bridge-dashboard:latest
+    ports:
+      - "3000:80"
+    environment:
+      BRIDGE_API_URL: ${BRIDGE_API_URL:-http://host.docker.internal:8080}
+      BRIDGE_API_KEY: ${BRIDGE_API_KEY:-}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

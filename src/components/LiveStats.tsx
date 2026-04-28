@@ -2,16 +2,9 @@ import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { fetchLatestWindow } from '@/api/energy';
 import { ApiError } from '@/api/client';
 import type { WindowItem } from '@/api/types';
+import { toKw, toWh } from '@/utils/formatters';
 import { StatCard } from './StatCard';
 import styles from './LiveStats.module.css';
-
-function toKw(wh: number): string {
-  return `${(wh * 4 / 1000).toFixed(2)} kW`;
-}
-
-function toWh(wh: number): string {
-  return `~${Math.round(wh)} Wh`;
-}
 
 export function LiveStats() {
   const { data, error } = useAutoRefresh<WindowItem>(fetchLatestWindow);

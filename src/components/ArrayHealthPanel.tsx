@@ -1,14 +1,8 @@
 import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { fetchArrays } from '@/api/inverters';
 import type { ArraysResponse, ArraySummary, InverterItem } from '@/api/types';
+import { badgeColor } from '@/utils/formatters';
 import styles from './ArrayHealthPanel.module.css';
-
-function badgeColor(online: number, total: number): string {
-  if (total === 0) return 'var(--fg-muted)';
-  if (online === total) return 'var(--green)';
-  if (online === 0) return 'var(--red)';
-  return 'var(--orange)';
-}
 
 function ArrayRow({ arr }: { arr: ArraySummary }) {
   const color = badgeColor(arr.online_count, arr.total_count);

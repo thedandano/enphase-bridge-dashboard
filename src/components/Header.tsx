@@ -2,25 +2,9 @@ import { useEffect } from 'react';
 import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { fetchHealth } from '@/api/health';
 import type { HealthResponse } from '@/api/types';
+import { formatUptime, tokenStatus } from '@/utils/formatters';
+import type { TokenStatus } from '@/utils/formatters';
 import styles from './Header.module.css';
-
-function formatUptime(seconds: number): string {
-  const d = Math.floor(seconds / 86400);
-  const h = Math.floor((seconds % 86400) / 3600);
-  if (d > 0) return `${d}d ${h}h`;
-  const m = Math.floor(seconds / 60);
-  return `${m}m`;
-}
-
-type TokenStatus = 'ok' | 'warning' | 'expired';
-
-function tokenStatus(expiresAt: number): TokenStatus {
-  const nowMs = Date.now();
-  const expiresMs = expiresAt * 1000;
-  if (expiresMs <= nowMs) return 'expired';
-  if (expiresMs - nowMs <= 7 * 86400 * 1000) return 'warning';
-  return 'ok';
-}
 
 function tokenLabel(expiresAt: number, status: TokenStatus): string {
   if (status === 'expired') return 'TOKEN EXPIRED';

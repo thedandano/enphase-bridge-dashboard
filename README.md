@@ -1,22 +1,44 @@
+[![CI](https://github.com/thedandano/enphase-bridge-dashboard/actions/workflows/ci.yml/badge.svg)](https://github.com/thedandano/enphase-bridge-dashboard/actions/workflows/ci.yml)
+[![Docker](https://ghcr.io/v2/thedandano/enphase-bridge-dashboard/tags/badge.svg)](https://github.com/thedandano/enphase-bridge-dashboard/pkgs/container/enphase-bridge-dashboard)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
+
 # enphase-bridge-dashboard
 
-A React + TypeScript dashboard for visualizing solar energy data from the [enphase-bridge](../enphase-bridge) daemon.
+React dashboard for the [enphase-bridge](https://github.com/thedandano/enphase-bridge) solar monitoring daemon. Displays real-time energy production, consumption, grid import/export, inverter health, and true-up cost estimates.
+
+<!-- Screenshots: add after first successful build -->
 
 ## Prerequisites
 
-- **[enphase-bridge](../enphase-bridge) must be running** and reachable before starting the dashboard. The dashboard has no data source without it.
-- The bridge must bind on `0.0.0.0` (not just `127.0.0.1`) — set `api.host = "0.0.0.0"` in the bridge `config.toml`.
-- Docker ≥ 20.10 and Compose V2 (for the Docker path)
+- **Docker ≥ 20.10** with Compose V2 (`docker compose`, not `docker-compose`)
+- **[enphase-bridge](https://github.com/thedandano/enphase-bridge) running** and reachable. Set `api.host = "0.0.0.0"` in the bridge `config.toml` so the container can reach it.
 
-## Quick Start (Docker)
+## Quick Start
 
 ```bash
-cp .env.example .env          # set BRIDGE_API_URL if bridge isn't on port 8080
+# 1. Copy env template
+cp .env.example .env
+
+# 2. Edit BRIDGE_API_URL to point to your bridge (default works on Mac/Windows with Docker)
+#    On Linux, set BRIDGE_API_URL=http://172.17.0.1:8080 (or your bridge host IP)
+nano .env
+
+# 3. Start the dashboard
 docker compose up -d
-open http://localhost:3000
+
+# 4. Open http://localhost:3000
 ```
 
-**`docker-compose.yml`**
+**Env var precedence:** `.env` file > `docker-compose.yml` env section > Dockerfile default
+
+## Environment Variables
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `BRIDGE_API_URL` | Yes | `http://host.docker.internal:8080` | URL of the enphase-bridge API |
+| `BRIDGE_API_KEY` | No | *(empty)* | API key if `api.require_key = true` in bridge config |
+
+## docker-compose.yml
 
 ```yaml
 services:
@@ -26,29 +48,60 @@ services:
       - "3000:80"
     environment:
       BRIDGE_API_URL: ${BRIDGE_API_URL:-http://host.docker.internal:8080}
-      # BRIDGE_API_KEY is optional — only set this if you enabled api_key auth in the bridge config.toml
+      # BRIDGE_API_KEY is optional — only set if you enabled api_key auth in the bridge config.toml
       BRIDGE_API_KEY: ${BRIDGE_API_KEY:-}
     extra_hosts:
       - "host.docker.internal:host-gateway"
 ```
 
-Set `BRIDGE_API_URL` in `.env` (copy from `.env.example`) if your bridge runs on a different host or port. `BRIDGE_API_KEY` is only needed if the bridge has `api.require_key = true` in its `config.toml` — most local installs leave this disabled.
+## Troubleshooting
 
-## Quick Start (Dev)
-
+**View logs:**
 ```bash
-npm install
-npm run dev
+docker compose logs -f
 ```
 
-The dev server proxies `/api/` to `BRIDGE_API_URL` (default: `http://localhost:8080`).
+**API calls return 502 — "Bad Gateway":**
+- Check `BRIDGE_API_URL` is reachable from inside the container.
+- On Linux, `host.docker.internal` may not resolve — use the host machine IP (e.g. `http://172.17.0.1:8080`) or ensure `extra_hosts: host.docker.internal:host-gateway` is in `docker-compose.yml`.
+
+**Container won't start:**
+- Verify `BRIDGE_API_URL` is a valid `http://` or `https://` URL (no trailing slash issues).
+
+**On Linux specifically:**
+- `host.docker.internal` is not built-in on Linux Docker. Either set `BRIDGE_API_URL=http://172.17.0.1:8080` or add `extra_hosts: - "host.docker.internal:host-gateway"` to the service in `docker-compose.yml`.
+
+## Enabling TOU Estimates
+
+Time-of-use cost estimates require OpenEI configuration in the bridge first:
+
+1. Add `api_key`, `utility_eia_id`, and `rate_label` to the bridge `config.toml` under the `[tou]` section.
+2. Restart `enphase-bridge`.
+3. Click **Refresh TOU** in the dashboard.
+
+## Kubernetes
+
+- Replace `BRIDGE_API_URL` with the ClusterDNS service URL pointing to the bridge service.
+- Note: `enphase-bridge` requires `hostNetwork: true` on its Pod — it must reach the Envoy IQ gateway on the local network.
+
+## Making the Image Public
+
+The container image is hosted on GitHub Container Registry (ghcr.io). To allow `docker pull` without authentication:
+
+GitHub → Packages → `enphase-bridge-dashboard` → Settings → Change visibility → **Public**
 
 ## Development
 
 ```bash
-npm run dev        # start dev server
+npm install
+npm run dev        # start dev server (proxies /api/ to BRIDGE_API_URL)
 npm run typecheck  # type-check without building
 npm run lint       # eslint
 npm run build      # production build
-npm test           # unit tests (vitest, added in M14)
+npm test           # unit tests (vitest)
+npm run test:watch # vitest in watch mode
 ```
+
+## License
+
+[AGPL v3](LICENSE)

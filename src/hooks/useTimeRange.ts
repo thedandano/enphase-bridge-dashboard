@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 
 export type TimeRange = '24h' | '7d' | '30d';
 
@@ -14,6 +14,11 @@ export const RANGE_LIMITS: Record<TimeRange, number> = {
   '30d': 2880,
 };
 
+function computeBounds(r: TimeRange): { start: number; end: number } {
+  const now = Math.floor(Date.now() / 1000);
+  return { start: now - RANGE_SECONDS[r], end: now };
+}
+
 export function useTimeRange(): {
   range: TimeRange;
   setRange: (r: TimeRange) => void;
@@ -21,12 +26,15 @@ export function useTimeRange(): {
   end: number;
   limit: number;
 } {
-  const [range, setRange] = useState<TimeRange>('24h');
+  const [range, setRangeState] = useState<TimeRange>('24h');
+  // Lazy initializer: Date.now() called once at mount, not on every render.
+  const [bounds, setBounds] = useState(() => computeBounds('24h'));
 
-  const now = Math.floor(Date.now() / 1000);
-  const start = now - RANGE_SECONDS[range];
-  const end = now;
-  const limit = RANGE_LIMITS[range];
+  // setRange updates both the range label and snaps start/end to the new "now".
+  const setRange = useCallback((r: TimeRange) => {
+    setRangeState(r);
+    setBounds(computeBounds(r));
+  }, []);
 
-  return { range, setRange, start, end, limit };
+  return { range, setRange, start: bounds.start, end: bounds.end, limit: RANGE_LIMITS[range] };
 }

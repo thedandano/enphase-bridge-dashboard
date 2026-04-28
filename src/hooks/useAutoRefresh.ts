@@ -1,7 +1,12 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 
 const BASE_INTERVAL = 30;
 const MAX_INTERVAL = 120;
+
+function computeInterval(errorCount: number): number {
+  if (errorCount === 0) return BASE_INTERVAL;
+  return Math.min(BASE_INTERVAL * Math.pow(2, errorCount - 1), MAX_INTERVAL);
+}
 
 export function useAutoRefresh<T>(
   fetchFn: () => Promise<T>,
@@ -10,37 +15,35 @@ export function useAutoRefresh<T>(
   const [error, setError] = useState<Error | null>(null);
   const [secondsUntilRefresh, setSecondsUntilRefresh] = useState(BASE_INTERVAL);
 
+  // Latest-ref pattern: sync via useLayoutEffect so we never write
+  // to a ref during render (react-hooks/refs rule).
+  const fetchFnRef = useRef(fetchFn);
+  useLayoutEffect(() => {
+    fetchFnRef.current = fetchFn;
+  });
+
   const consecutiveErrors = useRef(0);
   const currentInterval = useRef(BASE_INTERVAL);
-  const isMounted = useRef(true);
 
-  const computeInterval = (errorCount: number): number => {
-    if (errorCount === 0) return BASE_INTERVAL;
-    return Math.min(BASE_INTERVAL * Math.pow(2, errorCount - 1), MAX_INTERVAL);
-  };
-
-  const doFetch = useCallback(async () => {
+  // Stable doFetch — never recreated, reads latest fetchFn via ref.
+  const doFetch = useCallback(async (onComplete?: () => void) => {
     try {
-      const result = await fetchFn();
-      if (!isMounted.current) return;
+      const result = await fetchFnRef.current();
       setData(result);
       setError(null);
       consecutiveErrors.current = 0;
       currentInterval.current = BASE_INTERVAL;
     } catch (err) {
-      if (!isMounted.current) return;
       consecutiveErrors.current += 1;
       currentInterval.current = computeInterval(consecutiveErrors.current);
       setError(err instanceof Error ? err : new Error(String(err)));
+    } finally {
+      onComplete?.();
     }
-  }, [fetchFn]);
+  }, []); // stable — no deps
 
   useEffect(() => {
-    isMounted.current = true;
-
-    // Initial fetch
-    doFetch();
-
+    let cancelled = false;
     let tickInterval: ReturnType<typeof setInterval>;
     let remaining = currentInterval.current;
 
@@ -49,36 +52,36 @@ export function useAutoRefresh<T>(
       setSecondsUntilRefresh(remaining);
 
       tickInterval = setInterval(() => {
-        if (document.visibilityState === 'hidden') return;
-        remaining -= 1;
+        if (cancelled || document.visibilityState === 'hidden') return;
+        remaining = Math.max(0, remaining - 1);
         setSecondsUntilRefresh(remaining);
         if (remaining <= 0) {
           remaining = currentInterval.current;
           setSecondsUntilRefresh(remaining);
-          doFetch();
+          void doFetch();
         }
       }, 1000);
     };
 
+    // Initial fetch
+    void doFetch();
     startTick();
 
     const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        // Resume: reset countdown and fetch immediately
-        clearInterval(tickInterval);
-        doFetch();
-        startTick();
-      }
+      if (cancelled || document.visibilityState !== 'visible') return;
+      clearInterval(tickInterval);
+      void doFetch();
+      startTick();
     };
 
     document.addEventListener('visibilitychange', onVisibilityChange);
 
     return () => {
-      isMounted.current = false;
+      cancelled = true;
       clearInterval(tickInterval);
       document.removeEventListener('visibilitychange', onVisibilityChange);
     };
-  }, [doFetch]);
+  }, [doFetch]); // doFetch is stable, so this runs once
 
   return { data, error, secondsUntilRefresh };
 }

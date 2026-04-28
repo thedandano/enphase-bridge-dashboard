@@ -1,0 +1,81 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
+.arrayRow {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  padding: 1rem;
+}
+
+.arrayHeader {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.arrayName {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.badge {
+  font-family: var(--font-ui);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.watts {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  color: var(--signal-production);
+}
+
+.inverterList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.inverter {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.serial {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--fg);
+}
+
+.inverterWatts {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--fg-muted);
+}
+
+.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  color: var(--fg-muted);
+  text-align: center;
+}

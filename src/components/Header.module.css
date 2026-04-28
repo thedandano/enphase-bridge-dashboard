@@ -1,0 +1,33 @@
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+}
+
+.statusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--fg-muted);
+}
+
+.offline {
+  color: var(--red);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.uptime {
+  color: var(--fg);
+}
+
+.countdown {
+  margin-left: auto;
+  color: var(--fg-muted);
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+}

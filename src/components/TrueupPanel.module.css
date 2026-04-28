@@ -1,0 +1,249 @@
+.panel {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
+.panelHeader {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.title {
+  font-family: var(--font-ui);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--fg);
+  margin: 0;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.refreshBtn {
+  font-family: var(--font-ui);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: transparent;
+  border: 1px solid var(--purple);
+  color: var(--purple);
+  border-radius: var(--radius);
+  padding: 0.3rem 0.75rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.refreshBtn:hover:not(:disabled) {
+  background: var(--purple);
+  color: var(--bg);
+}
+
+.refreshBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Toast */
+.toast {
+  padding: 0.6rem 0.875rem;
+  border-radius: var(--radius);
+  font-family: var(--font-ui);
+  font-size: 0.875rem;
+  font-weight: 500;
+  animation: fadeIn 0.15s ease;
+}
+
+.toast--success {
+  background: rgba(138, 255, 128, 0.12);
+  color: var(--green);
+  border: 1px solid rgba(138, 255, 128, 0.3);
+}
+
+.toast--error {
+  background: rgba(255, 149, 128, 0.12);
+  color: var(--red);
+  border: 1px solid rgba(255, 149, 128, 0.3);
+}
+
+/* Date row */
+.dateRow {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.dateLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+}
+
+.dateInput {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  color: var(--fg);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.3rem 0.5rem;
+  cursor: pointer;
+  color-scheme: dark;
+}
+
+.dateInput:focus {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.fetchBtn {
+  font-family: var(--font-ui);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--fg);
+  border-radius: var(--radius);
+  padding: 0.3rem 0.75rem;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.fetchBtn:hover:not(:disabled) {
+  border-color: var(--fg);
+}
+
+.fetchBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Loading */
+.loading {
+  font-family: var(--font-ui);
+  font-size: 0.875rem;
+  color: var(--fg-muted);
+  text-align: center;
+  padding: 1rem 0;
+}
+
+/* Error box */
+.errorBox {
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius);
+  font-family: var(--font-ui);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.errorBox--warn {
+  background: rgba(255, 202, 128, 0.1);
+  color: var(--orange);
+  border: 1px solid rgba(255, 202, 128, 0.25);
+}
+
+.errorBox--generic {
+  background: rgba(255, 149, 128, 0.1);
+  color: var(--red);
+  border: 1px solid rgba(255, 149, 128, 0.25);
+}
+
+/* Net cost */
+.netCostBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.125rem;
+}
+
+.netCostLabel {
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+}
+
+.netCostValue {
+  font-family: var(--font-display);
+  font-size: 3rem;
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+
+.scheduleLabel {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--fg-muted);
+  margin-top: 0.125rem;
+}
+
+/* Breakdown table */
+.breakdownTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+}
+
+.tableHeader {
+  font-family: var(--font-ui);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+  text-align: left;
+  padding: 0.375rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.breakdownRow {
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.breakdownRow:last-child {
+  border-bottom: none;
+}
+
+.tierLabel {
+  font-family: var(--font-ui);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--fg);
+  padding: 0.5rem 0.5rem;
+  white-space: nowrap;
+}
+
+.breakdownCell {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  color: var(--fg);
+  padding: 0.5rem 0.5rem;
+  text-align: right;
+  white-space: nowrap;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}

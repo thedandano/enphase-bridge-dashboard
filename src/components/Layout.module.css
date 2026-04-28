@@ -1,0 +1,22 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  padding: 0 1.5rem;
+  height: 48px;
+  display: flex;
+  align-items: center;
+}
+
+.main {
+  flex: 1;
+  padding: 2rem;
+}

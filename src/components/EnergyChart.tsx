@@ -41,8 +41,6 @@ export function EnergyChart({ onWindowSelect }: Props) {
   const [chartStyle, setChartStyle] = useState<"area" | "bar">(
     () => (localStorage.getItem("energyChart.style") as "area" | "bar") ?? "bar"
   );
-  void setChartStyle;
-
   const windows: WindowItem[] = data ? [...data.windows] : [];
   const displayData = toDisplayData(windows);
 
@@ -72,15 +70,45 @@ export function EnergyChart({ onWindowSelect }: Props) {
     <div className={styles.container}>
       <h2 className={styles.title}>energy flow</h2>
       <div className={styles.controls}>
-        {RANGES.map((r) => (
+        <div style={{ display: "flex", gap: "0.5rem" }}>
+          {RANGES.map((r) => (
+            <button
+              key={r}
+              className={r === range ? styles.activeBtn : styles.btn}
+              onClick={() => setRange(r)}
+            >
+              {r}
+            </button>
+          ))}
+        </div>
+        <div className={styles.styleToggle}>
           <button
-            key={r}
-            className={r === range ? styles.activeBtn : styles.btn}
-            onClick={() => setRange(r)}
+            className={
+              chartStyle === "area"
+                ? `${styles.styleBtn} ${styles.styleBtnActive}`
+                : styles.styleBtn
+            }
+            onClick={() => {
+              setChartStyle("area");
+              localStorage.setItem("energyChart.style", "area");
+            }}
           >
-            {r}
+            ∿ Area
           </button>
-        ))}
+          <button
+            className={
+              chartStyle === "bar"
+                ? `${styles.styleBtn} ${styles.styleBtnActive}`
+                : styles.styleBtn
+            }
+            onClick={() => {
+              setChartStyle("bar");
+              localStorage.setItem("energyChart.style", "bar");
+            }}
+          >
+            ▐ Bars
+          </button>
+        </div>
       </div>
 
       {isEmpty ? (

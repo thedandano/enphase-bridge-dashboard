@@ -1,4 +1,9 @@
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { useState } from "react";
+import {
+  AreaChart, Area,
+  BarChart, Bar, ReferenceLine,
+  XAxis, YAxis, Tooltip, ResponsiveContainer,
+} from "recharts";
 import type { CategoricalChartFunc } from "recharts/types/chart/types";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { useTimeRange } from "@/hooks/useTimeRange";
@@ -32,6 +37,11 @@ function formatTick(epochSeconds: number): string {
 export function EnergyChart({ onWindowSelect }: Props) {
   const { range, setRange, start, end, limit } = useTimeRange();
   const { data } = useAutoRefresh<WindowsResponse>(() => fetchWindows(start, end, limit));
+
+  const [chartStyle, setChartStyle] = useState<"area" | "bar">(
+    () => (localStorage.getItem("energyChart.style") as "area" | "bar") ?? "bar"
+  );
+  void setChartStyle;
 
   const windows: WindowItem[] = data ? [...data.windows] : [];
   const displayData = toDisplayData(windows);
@@ -75,69 +85,105 @@ export function EnergyChart({ onWindowSelect }: Props) {
 
       {isEmpty ? (
         <div className={styles.empty}>No energy data for this range</div>
-      ) : (
-        <ResponsiveContainer width="100%" height={300}>
-          <AreaChart data={displayData} onClick={handleClick} style={{ cursor: "pointer" }}>
-            <XAxis
-              dataKey="window_start"
-              tickFormatter={(v: number) => formatTick(v)}
-              stroke="#9281BB"
-              tick={{ fill: "#9281BB", fontSize: 11, fontFamily: "JetBrains Mono, monospace" }}
-            />
-            <YAxis
-              stroke="#9281BB"
-              tick={{ fill: "#9281BB", fontSize: 11, fontFamily: "JetBrains Mono, monospace" }}
-              label={{ value: "Wh", angle: -90, position: "insideLeft", fill: "#9281BB", fontSize: 11, fontFamily: "JetBrains Mono, monospace" }}
-              domain={[-maxWh, maxWh]}
-            />
-            <Tooltip
-              contentStyle={{
-                background: "#131217",
-                border: "1px solid rgba(248,248,242,0.12)",
-                borderRadius: "6px",
-                fontFamily: "JetBrains Mono, monospace",
-                fontSize: "12px",
-              }}
-              labelFormatter={(v: unknown) => (typeof v === "number" ? formatTick(v) : String(v))}
-              formatter={(value: unknown, name: unknown) => {
-                const num = typeof value === "number" ? value : 0;
-                const label = typeof name === "string" ? name : String(name ?? "");
-                const display = ["Consumption", "Grid export"].includes(label)
-                  ? Math.abs(num)
-                  : num;
-                return [`${display} Wh`, label];
-              }}
-            />
-            {SERIES.map((s, i) => (
-              <Area
-                key={s.key}
-                type="monotone"
-                dataKey={s.key}
-                stroke={s.color}
-                fill={s.color}
-                fillOpacity={0.15}
-                strokeWidth={2}
-                name={s.label}
-                dot={(props: unknown) => {
-                  const p = props as { cx: number; cy: number; index: number };
-                  const isLast = p.index === windows.length - 1;
-                  const isIncomplete = isLast && windows[windows.length - 1]?.is_complete === false;
-                  return (
-                    <circle
-                      key={`dot-${i}-${p.index}`}
-                      cx={p.cx}
-                      cy={p.cy}
-                      r={3}
-                      fill={s.color}
-                      opacity={isIncomplete ? 0.4 : 0}
-                    />
-                  );
+      ) : chartStyle === "area" ? (
+          <ResponsiveContainer width="100%" height={300}>
+            <AreaChart data={displayData} onClick={handleClick} style={{ cursor: "pointer" }}>
+              <XAxis
+                dataKey="window_start"
+                tickFormatter={(v: number) => formatTick(v)}
+                stroke="#9281BB"
+                tick={{ fill: "#9281BB", fontSize: 11, fontFamily: "JetBrains Mono, monospace" }}
+              />
+              <YAxis
+                stroke="#9281BB"
+                tick={{ fill: "#9281BB", fontSize: 11, fontFamily: "JetBrains Mono, monospace" }}
+                label={{ value: "Wh", angle: -90, position: "insideLeft", fill: "#9281BB", fontSize: 11, fontFamily: "JetBrains Mono, monospace" }}
+                domain={[-maxWh, maxWh]}
+              />
+              <Tooltip
+                contentStyle={{
+                  background: "#131217",
+                  border: "1px solid rgba(248,248,242,0.12)",
+                  borderRadius: "6px",
+                  fontFamily: "JetBrains Mono, monospace",
+                  fontSize: "12px",
+                }}
+                labelFormatter={(v: unknown) => (typeof v === "number" ? formatTick(v) : String(v))}
+                formatter={(value: unknown, name: unknown) => {
+                  const v = typeof value === "number" ? value : 0;
+                  const n = String(name ?? "");
+                  const display = ["Consumption", "Grid export"].includes(n) ? Math.abs(v) : v;
+                  return [`${display} Wh`, n];
                 }}
               />
-            ))}
-          </AreaChart>
-        </ResponsiveContainer>
-      )}
+              {SERIES.map((s, i) => (
+                <Area
+                  key={s.key}
+                  type="monotone"
+                  dataKey={s.key}
+                  stroke={s.color}
+                  fill={s.color}
+                  fillOpacity={0.15}
+                  strokeWidth={2}
+                  name={s.label}
+                  dot={(props: unknown) => {
+                    const p = props as { cx: number; cy: number; index: number };
+                    const isLast = p.index === windows.length - 1;
+                    const isIncomplete = isLast && windows[windows.length - 1]?.is_complete === false;
+                    return (
+                      <circle
+                        key={`dot-${i}-${p.index}`}
+                        cx={p.cx}
+                        cy={p.cy}
+                        r={3}
+                        fill={s.color}
+                        opacity={isIncomplete ? 0.4 : 0}
+                      />
+                    );
+                  }}
+                />
+              ))}
+            </AreaChart>
+          </ResponsiveContainer>
+        ) : (
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={displayData} onClick={handleClick} style={{ cursor: "pointer" }}>
+              <XAxis
+                dataKey="window_start"
+                tickFormatter={(v: number) => formatTick(v)}
+                stroke="#9281BB"
+                tick={{ fill: "#9281BB", fontSize: 11, fontFamily: "JetBrains Mono, monospace" }}
+              />
+              <YAxis
+                stroke="#9281BB"
+                tick={{ fill: "#9281BB", fontSize: 11, fontFamily: "JetBrains Mono, monospace" }}
+                label={{ value: "Wh", angle: -90, position: "insideLeft", fill: "#9281BB", fontSize: 11, fontFamily: "JetBrains Mono, monospace" }}
+                domain={[-maxWh, maxWh]}
+              />
+              <ReferenceLine y={0} stroke="#6272a4" strokeDasharray="5 4" />
+              <Tooltip
+                contentStyle={{
+                  background: "#131217",
+                  border: "1px solid rgba(248,248,242,0.12)",
+                  borderRadius: "6px",
+                  fontFamily: "JetBrains Mono, monospace",
+                  fontSize: "12px",
+                }}
+                labelFormatter={(v: unknown) => (typeof v === "number" ? formatTick(v) : String(v))}
+                formatter={(value: unknown, name: unknown) => {
+                  const v = typeof value === "number" ? value : 0;
+                  const n = String(name ?? "");
+                  const display = ["Consumption", "Grid export"].includes(n) ? Math.abs(v) : v;
+                  return [`${display} Wh`, n];
+                }}
+              />
+              <Bar dataKey="wh_produced"    stackId="pos" fill="#8AFF80" fillOpacity={0.82} name="Production" />
+              <Bar dataKey="wh_grid_import" stackId="pos" fill="#FF9580" fillOpacity={0.75} name="Import" />
+              <Bar dataKey="wh_consumed"    stackId="neg" fill="#FFCA80" fillOpacity={0.75} name="Consumption" />
+              <Bar dataKey="wh_grid_export" stackId="neg" fill="#80FFEA" fillOpacity={0.68} name="Grid export" />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
 
       <p className={styles.hint}>Click a point to inspect inverters at that moment</p>
     </div>

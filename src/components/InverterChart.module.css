@@ -1,0 +1,207 @@
+/* ── Layout ───────────────────────────────────────────────────────────────── */
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem 1rem 1rem;
+}
+
+/* ── Toolbar ─────────────────────────────────────────────────────────────── */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.heading {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  color: var(--fg);
+  flex: 1;
+  line-height: 1;
+}
+
+.headingAccent {
+  color: var(--text-accent);
+}
+
+/* ── Range buttons ───────────────────────────────────────────────────────── */
+
+.controls {
+  display: flex;
+  gap: 0.375rem;
+}
+
+.btn,
+.activeBtn {
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 0.25rem 0.625rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.btn:hover {
+  background: var(--bg-elevated);
+  color: var(--fg);
+  border-color: var(--purple);
+}
+
+.activeBtn {
+  background: var(--purple);
+  color: #fff;
+  border-color: var(--purple);
+}
+
+/* ── Filter input ────────────────────────────────────────────────────────── */
+
+.filter {
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.3rem 0.7rem;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  min-width: 160px;
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+
+.filter::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.6;
+}
+
+.filter:focus {
+  outline: none;
+  border-color: var(--focus-ring);
+  box-shadow: 0 0 0 2px rgba(149, 128, 255, 0.2);
+}
+
+/* ── Chart wrapper ───────────────────────────────────────────────────────── */
+
+.chartWrap {
+  position: relative;
+  border-radius: calc(var(--radius) - 1px);
+  overflow: hidden;
+}
+
+/* ── State: loading / empty ──────────────────────────────────────────────── */
+
+.stateBox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  height: 280px;
+  color: var(--text-secondary);
+  font-family: var(--font-ui);
+  font-size: 0.95rem;
+  letter-spacing: 0.04em;
+}
+
+/* Pulsing dot for loading state */
+.pulse {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--purple);
+  animation: pulse 1.4s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.25; transform: scale(0.8); }
+  50%       { opacity: 1;    transform: scale(1.15); }
+}
+
+/* ── Legend ──────────────────────────────────────────────────────────────── */
+
+.legend {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.375rem 1rem;
+  padding: 0.75rem 0.5rem 0.25rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.legendSwatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.legendSerial {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.legendWh {
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* ── Back button (drill-down) ────────────────────────────────────────────── */
+
+.back {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-secondary);
+  font-family: var(--font-display);
+  font-size: 1rem;
+  letter-spacing: 0.06em;
+  padding: 0.3rem 0.75rem;
+  cursor: pointer;
+  transition: color 0.12s, border-color 0.12s, background 0.12s;
+}
+
+.back:hover {
+  color: var(--fg);
+  border-color: var(--fg-muted);
+  background: var(--bg-elevated);
+}
+
+/* ── Hint text ───────────────────────────────────────────────────────────── */
+
+.hint {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  opacity: 0.65;
+  text-align: center;
+  letter-spacing: 0.03em;
+}

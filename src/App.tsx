@@ -5,7 +5,7 @@ import { LiveStats } from '@/components/LiveStats';
 import { EnergyChart } from '@/components/EnergyChart';
 import { ArrayHealthPanel } from '@/components/ArrayHealthPanel';
 import { TrueupPanel } from '@/components/TrueupPanel';
-import { InverterTable } from '@/components/InverterTable';
+import { InverterChart } from '@/components/InverterChart';
 import styles from './App.module.css';
 
 export default function App() {
@@ -25,9 +25,10 @@ export default function App() {
         <ArrayHealthPanel />
         <TrueupPanel />
       </div>
-      <InverterTable
+      <InverterChart
         selectedWindowTs={selectedWindowTs}
         onClearWindow={() => setSelectedWindowTs(null)}
+        onWindowSelect={setSelectedWindowTs}
       />
     </Layout>
   );

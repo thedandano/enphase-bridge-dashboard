@@ -4,7 +4,7 @@ import { Header } from '@/components/Header';
 import { LiveStats } from '@/components/LiveStats';
 import { ArrayHealthPanel } from '@/components/ArrayHealthPanel';
 import { TrueupPanel } from '@/components/TrueupPanel';
-import { InverterTable } from '@/components/InverterTable';
+import { InverterChart } from '@/components/InverterChart';
 
 // Stub fetch globally — return a never-resolving promise so no real network calls are made
 beforeEach(() => {
@@ -28,7 +28,7 @@ describe('Smoke renders', () => {
     render(<TrueupPanel />);
   });
 
-  it('InverterTable renders without throwing', () => {
-    render(<InverterTable selectedWindowTs={null} onClearWindow={() => {}} />);
+  it('InverterChart renders without throwing', () => {
+    render(<InverterChart selectedWindowTs={null} onClearWindow={() => {}} />);
   });
 });

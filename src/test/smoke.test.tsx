@@ -9,15 +9,8 @@ import { InverterChart } from '@/components/InverterChart';
 import { EnergyChart } from '@/components/EnergyChart';
 
 // Stub fetch globally — return a never-resolving promise so no real network calls are made
-// Stub localStorage globally — jsdom's native localStorage is non-functional in this test env
 beforeEach(() => {
   vi.stubGlobal('fetch', () => new Promise(() => {}));
-  vi.stubGlobal('localStorage', {
-    getItem: () => null,
-    setItem: () => {},
-    removeItem: () => {},
-    clear: () => {},
-  });
 });
 
 describe('Smoke renders', () => {

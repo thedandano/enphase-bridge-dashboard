@@ -32,10 +32,8 @@ jobs:
 
       - name: Docker build
         run: docker build -t enphase-bridge-dashboard:ci .
-        if: hashFiles('Dockerfile') != ''
 
       - name: Check image size
-        if: hashFiles('Dockerfile') != ''
         run: |
           SIZE=$(docker image inspect enphase-bridge-dashboard:ci --format='{{.Size}}')
           echo "Image size: $SIZE bytes"

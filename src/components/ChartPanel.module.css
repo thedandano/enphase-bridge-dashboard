@@ -1,0 +1,113 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.todayGroup {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.todayGroup .btn,
+.todayGroup .activeBtn {
+  border: none;
+  border-radius: 0;
+}
+
+.navBtn {
+  font-family: var(--font-ui);
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0.375rem 1rem;
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--border);
+  color: var(--fg-muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  line-height: 1;
+}
+
+.navBtn:last-child {
+  border-right: none;
+  border-left: 1px solid var(--border);
+}
+
+.navBtn:hover:not(:disabled) {
+  background: var(--bg-elevated);
+  color: var(--fg);
+}
+
+.navBtn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.styleToggle {
+  display: flex;
+  border: 1px solid rgba(121, 112, 169, 0.35);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.styleBtn {
+  padding: 4px 10px;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+
+.styleBtn + .styleBtn {
+  border-left: 1px solid rgba(121, 112, 169, 0.35);
+}
+
+.styleBtnActive {
+  background: rgba(138, 255, 128, 0.1);
+  color: var(--signal-production);
+}
+
+.btn,
+.activeBtn {
+  font-family: var(--font-ui);
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  background: transparent;
+  color: var(--fg-muted);
+}
+
+.btn:hover {
+  background: var(--bg-elevated);
+  color: var(--fg);
+  border-color: var(--purple);
+}
+
+.activeBtn {
+  background: var(--purple);
+  color: #fff;
+  border-color: var(--purple);
+}

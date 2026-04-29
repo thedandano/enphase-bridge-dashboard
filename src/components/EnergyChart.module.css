@@ -6,68 +6,6 @@
   border: 1px solid var(--border);
 }
 
-.controls {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-.styleToggle {
-  display: flex;
-  border: 1px solid rgba(121, 112, 169, 0.35);
-  border-radius: var(--radius);
-  overflow: hidden;
-}
-
-.styleBtn {
-  padding: 4px 10px;
-  background: transparent;
-  border: none;
-  color: var(--text-secondary);
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  cursor: pointer;
-  transition: color 0.15s, background 0.15s;
-}
-
-.styleBtn + .styleBtn {
-  border-left: 1px solid rgba(121, 112, 169, 0.35);
-}
-
-.styleBtnActive {
-  background: rgba(138, 255, 128, 0.1);
-  color: var(--signal-production);
-}
-
-.btn,
-.activeBtn {
-  font-family: var(--font-ui);
-  font-size: 0.875rem;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  padding: 0.25rem 0.75rem;
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
-  background: transparent;
-  color: var(--fg-muted);
-}
-
-.btn:hover {
-  background: var(--bg-elevated);
-  color: var(--fg);
-  border-color: var(--purple);
-}
-
-.activeBtn {
-  background: var(--purple);
-  color: #fff;
-  border-color: var(--purple);
-}
-
 .empty {
   display: flex;
   align-items: center;
@@ -89,12 +27,11 @@
 }
 
 .title {
-  font-family: var(--font-mono);
-  font-size: 1rem;
-  font-weight: 700;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 400;
   letter-spacing: 0.06em;
-  text-align: center;
-  color: var(--text-primary);
+  color: var(--fg);
   margin: 0 0 0.25rem;
 }
 

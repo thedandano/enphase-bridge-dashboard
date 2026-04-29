@@ -1,6 +1,7 @@
 import { apiFetch } from './client';
 import type { WindowItem, WindowsResponse } from './types';
 import { epochToRfc3339 } from './time';
+import { localMidnightUnix, RANGE_LIMITS } from '@/hooks/useTimeRange';
 
 /** Throws ApiError(status=404) when no windows exist — handle as empty-state, not an error. */
 export function fetchLatestWindow(): Promise<WindowItem> {
@@ -8,10 +9,7 @@ export function fetchLatestWindow(): Promise<WindowItem> {
 }
 
 export function fetchTodayWindows(): Promise<WindowsResponse> {
-  const now = Math.floor(Date.now() / 1000);
-  const midnight = new Date();
-  midnight.setUTCHours(0, 0, 0, 0);
-  return fetchWindows(Math.floor(midnight.getTime() / 1000), now, 1000);
+  return fetchWindows(localMidnightUnix(), Math.floor(Date.now() / 1000), RANGE_LIMITS['today']);
 }
 
 export function fetchWindows(

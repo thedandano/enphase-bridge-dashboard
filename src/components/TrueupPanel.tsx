@@ -1,5 +1,5 @@
 import { useState, useEffect, useLayoutEffect, useRef, useCallback, useReducer } from 'react';
-import { fetchTrueupEstimate, refreshTou } from '@/api/tou';
+import { fetchTrueupEstimate } from '@/api/tou';
 import { ApiError } from '@/api/client';
 import type { EstimateResponse, PeriodDetail } from '@/api/types';
 import styles from './TrueupPanel.module.css';
@@ -36,7 +36,7 @@ function getErrorMessage(err: unknown): ErrorInfo {
       return {
         type: 'no_schedule',
         message:
-          'TOU not configured — configure OpenEI in bridge config.toml, then click Refresh TOU',
+          'TOU not configured — configure OpenEI in bridge config.toml',
       };
     }
     if (err.code === 'insufficient_data') {
@@ -108,12 +108,6 @@ export function TrueupPanel() {
     estimateError: null,
   });
 
-  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
-  const [cooldownUntil, setCooldownUntil] = useState<number>(0);
-  // tickNow is set by a setInterval, never during render
-  const [tickNow, setTickNow] = useState<number>(0);
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-
   // Latest-ref pattern for dates — stable doFetch with empty deps
   const startDateRef = useRef(startDate);
   const endDateRef = useRef(endDate);
@@ -143,51 +137,6 @@ export function TrueupPanel() {
     // including it alongside stable doFetch is intentional to re-run on date changes.
   }, [doFetch, fetchTrigger]);
 
-  // Auto-clear toast after 5 seconds
-  useEffect(() => {
-    if (!toast) return;
-    const id = setTimeout(() => setToast(null), 5000);
-    return () => clearTimeout(id);
-  }, [toast]);
-
-  // Cooldown countdown tick — setTickNow via interval, never during render
-  useEffect(() => {
-    if (cooldownUntil === 0) return;
-    const id = setInterval(() => {
-      const now = Date.now();
-      setTickNow(now);
-      if (now >= cooldownUntil) {
-        clearInterval(id);
-      }
-    }, 1000);
-    return () => clearInterval(id);
-  }, [cooldownUntil]);
-
-  // isCoolingDown derived purely from tickNow state (no Date.now() in render)
-  const isCoolingDown = tickNow > 0 && tickNow < cooldownUntil;
-  const cooldownSecsLeft = isCoolingDown ? Math.ceil((cooldownUntil - tickNow) / 1000) : 0;
-
-  async function handleRefreshTou() {
-    if (!window.confirm('This will call the OpenEI API. Continue?')) return;
-    setIsRefreshing(true);
-    try {
-      const result = await refreshTou();
-      const now = Date.now();
-      setCooldownUntil(now + 60_000);
-      setTickNow(now);
-      const effective = result.effective_date ?? 'N/A';
-      setToast({
-        type: 'success',
-        message: `TOU updated: ${result.rate_label} (effective ${effective})`,
-      });
-    } catch (err) {
-      const info = getErrorMessage(err);
-      setToast({ type: 'error', message: info.message });
-    } finally {
-      setIsRefreshing(false);
-    }
-  }
-
   const { isLoading, estimate, estimateError } = estimateState;
 
   const netCostColor =
@@ -195,27 +144,7 @@ export function TrueupPanel() {
 
   return (
     <div className={styles.panel}>
-      <div className={styles.panelHeader}>
-        <h2 className={styles.title}>TOU / True-up Estimate</h2>
-        <button
-          className={styles.refreshBtn}
-          onClick={() => void handleRefreshTou()}
-          disabled={isRefreshing || isCoolingDown}
-          aria-label="Refresh TOU schedule from OpenEI"
-        >
-          {isRefreshing
-            ? 'Refreshing…'
-            : isCoolingDown
-              ? `Wait ${cooldownSecsLeft}s`
-              : 'Refresh TOU'}
-        </button>
-      </div>
-
-      {toast && (
-        <div className={`${styles.toast} ${styles[`toast--${toast.type}`]}`}>
-          {toast.message}
-        </div>
-      )}
+      <h2 className={styles.title}>TOU / True-up Estimate</h2>
 
       <div className={styles.dateRow}>
         <label className={styles.dateLabel}>

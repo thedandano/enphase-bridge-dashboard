@@ -4,24 +4,25 @@ import {
 } from 'recharts';
 import type { CategoricalChartFunc } from 'recharts/types/chart/types';
 import { useAutoRefresh } from '@/hooks/useAutoRefresh';
-import { useTimeRange } from '@/hooks/useTimeRange';
-import type { TimeRange } from '@/api/types';
 import { fetchSnapshots, fetchSnapshotsByWindow } from '@/api/inverters';
 import type {
   SnapshotsResponse,
   SnapshotItem,
   WindowInvertersResponse,
   InverterItem,
+  TimeRange,
 } from '@/api/types';
+import { computeXTicks, formatChartTick, CHART_FONT, CHART_FONT_UI } from '@/utils/formatters';
 import styles from './InverterChart.module.css';
 
 interface Props {
+  range: TimeRange;
+  start: number;
+  end: number;
   selectedWindowTs: number | null;
   onClearWindow: () => void;
   onWindowSelect?: (windowTs: number) => void;
 }
-
-const RANGES: TimeRange[] = ['24h', '7d', '30d'];
 
 const PALETTE = [
   '#8AFF80',
@@ -89,13 +90,6 @@ function computeDailyWh(snapshots: readonly SnapshotItem[]): Record<string, numb
   return result;
 }
 
-function formatTick(epochSeconds: number): string {
-  return new Intl.DateTimeFormat(undefined, {
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(epochSeconds * 1000));
-}
-
 function formatFull(epochSeconds: number): string {
   return new Intl.DateTimeFormat(undefined, {
     dateStyle: 'medium',
@@ -152,7 +146,7 @@ function DrillDownChart({ windowTs, colorMap, onBack }: DrillDownProps) {
           <XAxis
             dataKey="serial"
             stroke="#9281BB"
-            tick={{ fill: '#9281BB', fontSize: 10, fontFamily: 'JetBrains Mono, monospace' }}
+            tick={{ fill: '#9281BB', fontSize: 10, fontFamily: CHART_FONT }}
             tickLine={false}
             angle={-35}
             textAnchor="end"
@@ -160,15 +154,15 @@ function DrillDownChart({ windowTs, colorMap, onBack }: DrillDownProps) {
           />
           <YAxis
             stroke="#9281BB"
-            tick={{ fill: '#9281BB', fontSize: 11, fontFamily: 'JetBrains Mono, monospace' }}
-            label={{ value: 'W', angle: -90, position: 'insideLeft', fill: '#9281BB', fontSize: 11, fontFamily: 'JetBrains Mono, monospace' }}
+            tick={{ fill: '#9281BB', fontSize: 11, fontFamily: CHART_FONT }}
+            label={{ value: 'W', angle: -90, position: 'insideLeft', fill: '#9281BB', fontSize: 11, fontFamily: CHART_FONT }}
           />
           <Tooltip
             contentStyle={{
               background: '#3A3949',
               border: '1px solid rgba(248,248,242,0.12)',
               borderRadius: '6px',
-              fontFamily: 'Barlow Condensed, Arial Narrow, sans-serif',
+              fontFamily: CHART_FONT_UI,
               fontSize: '0.85rem',
             }}
             formatter={(v: unknown) => [`${Number(v).toFixed(1)} W`, 'Output']}
@@ -193,12 +187,12 @@ function DrillDownChart({ windowTs, colorMap, onBack }: DrillDownProps) {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export function InverterChart({ selectedWindowTs, onClearWindow, onWindowSelect }: Props) {
+export function InverterChart({ range, start, end, selectedWindowTs, onClearWindow, onWindowSelect }: Props) {
   const [serialFilter, setSerialFilter] = useState('');
-  const { range, setRange, start, end } = useTimeRange();
 
   const { data } = useAutoRefresh<SnapshotsResponse>(
-    () => fetchSnapshots({ start, end, limit: 200 }),
+    () => fetchSnapshots({ start, end, limit: 2000 }),
+    [start],
   );
 
   const snapshots = useMemo(() => data?.snapshots ?? [], [data]);
@@ -233,6 +227,7 @@ export function InverterChart({ selectedWindowTs, onClearWindow, onWindowSelect 
   );
 
   const dailyWh = useMemo(() => computeDailyWh(snapshots), [snapshots]);
+  const xTicks = computeXTicks(range, start, end);
 
   if (selectedWindowTs !== null) {
     return (
@@ -263,17 +258,6 @@ export function InverterChart({ selectedWindowTs, onClearWindow, onWindowSelect 
     <section className={styles.section}>
       <div className={styles.toolbar}>
         <h2 className={styles.heading}>INVERTER OUTPUT</h2>
-        <div className={styles.controls}>
-          {RANGES.map((r) => (
-            <button
-              key={r}
-              className={r === range ? styles.activeBtn : styles.btn}
-              onClick={() => setRange(r)}
-            >
-              {r}
-            </button>
-          ))}
-        </div>
         <input
           className={styles.filter}
           type="text"
@@ -304,22 +288,22 @@ export function InverterChart({ selectedWindowTs, onClearWindow, onWindowSelect 
               >
                 <XAxis
                   dataKey="windowStart"
-                  tickFormatter={formatTick}
+                  tickFormatter={(v: number) => formatChartTick(range, v)}
+                  ticks={xTicks}
                   stroke="#9281BB"
-                  tick={{ fill: '#9281BB', fontSize: 11, fontFamily: 'JetBrains Mono, monospace' }}
+                  tick={{ fill: '#9281BB', fontSize: 11, fontFamily: CHART_FONT }}
                   tickLine={false}
-                  interval="preserveStartEnd"
                 />
                 <YAxis
                   stroke="#9281BB"
-                  tick={{ fill: '#9281BB', fontSize: 11, fontFamily: 'JetBrains Mono, monospace' }}
+                  tick={{ fill: '#9281BB', fontSize: 11, fontFamily: CHART_FONT }}
                   label={{
                     value: 'W',
                     angle: -90,
                     position: 'insideLeft',
                     fill: '#9281BB',
                     fontSize: 11,
-                    fontFamily: 'JetBrains Mono, monospace',
+                    fontFamily: CHART_FONT,
                   }}
                 />
                 <Tooltip
@@ -327,7 +311,7 @@ export function InverterChart({ selectedWindowTs, onClearWindow, onWindowSelect 
                     background: '#3A3949',
                     border: '1px solid rgba(248,248,242,0.12)',
                     borderRadius: '6px',
-                    fontFamily: 'Barlow Condensed, Arial Narrow, sans-serif',
+                    fontFamily: CHART_FONT_UI,
                     fontSize: '0.85rem',
                   }}
                   labelFormatter={(v: unknown) =>

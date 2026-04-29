@@ -34,41 +34,6 @@
   color: var(--text-accent);
 }
 
-/* ── Range buttons ───────────────────────────────────────────────────────── */
-
-.controls {
-  display: flex;
-  gap: 0.375rem;
-}
-
-.btn,
-.activeBtn {
-  font-family: var(--font-ui);
-  font-size: 0.8rem;
-  font-weight: 600;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  padding: 0.25rem 0.625rem;
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  cursor: pointer;
-  transition: background 0.12s, color 0.12s, border-color 0.12s;
-  background: transparent;
-  color: var(--text-secondary);
-}
-
-.btn:hover {
-  background: var(--bg-elevated);
-  color: var(--fg);
-  border-color: var(--purple);
-}
-
-.activeBtn {
-  background: var(--purple);
-  color: #fff;
-  border-color: var(--purple);
-}
-
 /* ── Filter input ────────────────────────────────────────────────────────── */
 
 .filter {

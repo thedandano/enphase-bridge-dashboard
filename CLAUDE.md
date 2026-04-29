@@ -18,7 +18,7 @@ npx vitest run src/test/formatUptime.test.ts
 
 **Git hooks** (husky):
 - Pre-commit: `lint-staged` — runs eslint + tsc on staged `.ts`/`.tsx` files
-- Pre-push: `npm run typecheck`
+- Pre-push: `npm run typecheck` + `TZ=UTC npm test`
 
 **CI** (`.github/workflows/ci.yml`): lint → typecheck → build → test → docker build + image size ≤ 100 MB.
 
@@ -44,7 +44,22 @@ Each component fetches its own data via `useAutoRefresh<T>(fetchFn)` from `src/h
 - Pauses while the browser tab is hidden; re-fetches and restarts the clock on tab visibility restore.
 - Returns `{ data, error, secondsUntilRefresh }`.
 
-`useTimeRange` (`src/hooks/useTimeRange.ts`) manages the 24 h / 7 d / 30 d window selector and computes `{ start, end, limit }` as Unix epoch bounds.
+`useTimeRange` (`src/hooks/useTimeRange.ts`) manages the `today / 24h / 7d / 30d` window selector and computes `{ start, end, limit }` as Unix epoch bounds. The `'today'` range (midnight→now, limit 96) recomputes `start/end` on every render; the other ranges snapshot bounds at selection time.
+
+### Cross-component drill-down
+
+`App` holds `selectedWindowTs: number | null`. `EnergyChart` calls `onWindowSelect(window_start)` when the user clicks a bar/point. `InverterChart` receives `selectedWindowTs` and switches from showing aggregate snapshots to showing per-inverter output for that specific window. Clicking the header clears the selection.
+
+### EnergyChart rendering invariants
+
+`wh_consumed` and `wh_grid_export` are **negated** by `toDisplayData()` before being passed to Recharts, so they render below the zero axis in the mirrored stacked chart. The tooltip formatter un-negates these for display. The Y-axis domain is `[-maxWh, maxWh]` with symmetric nice-step ticks; `tickFormatter` calls `Math.abs` so no negative labels appear.
+
+The Area/Bar chart style toggle persists to `localStorage` under `energyChart.style`.
+
+### Utilities (`src/utils/`)
+
+- `formatters.ts` — `toKw`, `toWh`, `formatUptime`, `tokenStatus`, `badgeColor`, `formatDateLabel`, `toDisplayData`
+- `dailySummary.ts` — `computeDailySummary(windows)` (sums energy fields across windows), `toEnergy(wh)` (formats as kWh when ≥ 1000, else whole Wh)
 
 ### Styling
 
@@ -52,9 +67,21 @@ CSS Modules (`.module.css` per component) + CSS custom properties defined global
 
 ### Tests (`src/test/`)
 
-- Unit tests cover pure helpers in `src/utils/formatters.ts` (`toKw`, `toWh`, `formatUptime`, `tokenStatus`, `badgeColor`).
-- Smoke render tests in `smoke.test.tsx` render each top-level component with `fetch` stubbed to a never-resolving promise, asserting no throw.
-- Vitest runs in `jsdom` with `@testing-library/react`; setup file is `src/test/setup.ts`.
+Unit tests cover pure helpers and hooks. Test files are one-to-one with the thing under test:
+
+| Test file | Covers |
+|---|---|
+| `kWConversion.test.ts` | `toKw`, `toWh` |
+| `formatUptime.test.ts` | `formatUptime` |
+| `tokenStatus.test.ts` | `tokenStatus` |
+| `onlineBadgeColor.test.ts` | `badgeColor` |
+| `formatDateLabel.test.ts` | `formatDateLabel` |
+| `energyChartTransform.test.ts` | `toDisplayData` |
+| `computeDailySummary.test.ts` | `computeDailySummary`, `toEnergy` |
+| `useTimeRange.test.ts` | `useTimeRange` hook |
+| `smoke.test.tsx` | render smoke tests (fetch stubbed to never-resolve) |
+
+Vitest runs in `jsdom` with `@testing-library/react`; setup file is `src/test/setup.ts`. Tests that depend on date formatting run under `TZ=UTC` (enforced by the pre-push hook and CI).
 
 ### Docker / nginx
 

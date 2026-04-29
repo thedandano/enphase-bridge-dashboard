@@ -10,6 +10,7 @@ function computeInterval(errorCount: number): number {
 
 export function useAutoRefresh<T>(
   fetchFn: () => Promise<T>,
+  deps: readonly unknown[] = [],
 ): { data: T | null; error: Error | null; secondsUntilRefresh: number } {
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<Error | null>(null);
@@ -81,7 +82,8 @@ export function useAutoRefresh<T>(
       clearInterval(tickInterval);
       document.removeEventListener('visibilitychange', onVisibilityChange);
     };
-  }, [doFetch]); // doFetch is stable, so this runs once
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [doFetch, ...deps]); // doFetch is stable; deps trigger re-fetch when they change
 
   return { data, error, secondsUntilRefresh };
 }

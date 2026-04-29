@@ -1,4 +1,4 @@
-## ADDED Requirements
+## MODIFIED Requirements
 
 ### Requirement: Today summary section displays daily energy totals
 The dashboard SHALL display a "Today" section above the EnergyChart showing four daily-aggregate values: kWh produced, kWh consumed, kWh exported to grid, and kWh imported from grid. Values SHALL be computed by fetching all complete and in-progress windows from **local** midnight to the current time and summing their `wh_*` fields, then formatting with `toEnergy` from `src/utils/dailySummary.ts`. The fetch limit SHALL be `RANGE_LIMITS['today']` (96 windows), matching the 15-min resolution ceiling for a single calendar day.
@@ -22,17 +22,3 @@ The dashboard SHALL display a "Today" section above the EnergyChart showing four
 #### Scenario: Local midnight is used, not UTC midnight
 - **WHEN** the component fetches today's windows in a timezone offset from UTC
 - **THEN** the `start` parameter equals the Unix epoch of local midnight (00:00:00 in the browser's local timezone), not UTC midnight
-
-### Requirement: Today section uses a section eyebrow label
-The section SHALL render an eyebrow label "Today" above the metric card grid, consistent with the visual hierarchy used by the `RightNowSection`.
-
-#### Scenario: Eyebrow label is visible
-- **WHEN** the `TodaySummary` component renders
-- **THEN** the text "Today" appears as a small uppercase label above the metric grid
-
-### Requirement: Today section is positioned above the EnergyChart
-The `TodaySummary` SHALL appear as the first content element in `<main>`, before `RightNowSection` and `EnergyChart`.
-
-#### Scenario: Layout order in DOM
-- **WHEN** the App renders
-- **THEN** the DOM order is: TodaySummary → RightNowSection → EnergyChart → lower panels

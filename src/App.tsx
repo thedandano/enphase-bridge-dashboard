@@ -3,14 +3,12 @@ import { Layout } from '@/components/Layout';
 import { Header } from '@/components/Header';
 import { RightNowSection } from '@/components/RightNowSection';
 import { TodaySummary } from '@/components/TodaySummary';
-import { EnergyChart } from '@/components/EnergyChart';
+import { ChartPanel } from '@/components/ChartPanel';
 import { ArrayHealthPanel } from '@/components/ArrayHealthPanel';
 import { TrueupPanel } from '@/components/TrueupPanel';
-import { InverterChart } from '@/components/InverterChart';
 import styles from './App.module.css';
 
 export default function App() {
-  const [selectedWindowTs, setSelectedWindowTs] = useState<number | null>(null);
   const [isFirstRun, setIsFirstRun] = useState(false);
 
   return (
@@ -22,16 +20,11 @@ export default function App() {
       )}
       <TodaySummary />
       <RightNowSection />
-      <EnergyChart onWindowSelect={setSelectedWindowTs} />
+      <ChartPanel />
       <div className={styles.twoCol}>
         <ArrayHealthPanel />
         <TrueupPanel />
       </div>
-      <InverterChart
-        selectedWindowTs={selectedWindowTs}
-        onClearWindow={() => setSelectedWindowTs(null)}
-        onWindowSelect={setSelectedWindowTs}
-      />
     </Layout>
   );
 }

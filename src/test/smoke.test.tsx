@@ -5,8 +5,7 @@ import { RightNowSection } from '@/components/RightNowSection';
 import { TodaySummary } from '@/components/TodaySummary';
 import { ArrayHealthPanel } from '@/components/ArrayHealthPanel';
 import { TrueupPanel } from '@/components/TrueupPanel';
-import { InverterChart } from '@/components/InverterChart';
-import { EnergyChart } from '@/components/EnergyChart';
+import { ChartPanel } from '@/components/ChartPanel';
 
 // Stub fetch globally — return a never-resolving promise so no real network calls are made
 beforeEach(() => {
@@ -34,11 +33,7 @@ describe('Smoke renders', () => {
     render(<TrueupPanel />);
   });
 
-  it('InverterChart renders without throwing', () => {
-    render(<InverterChart selectedWindowTs={null} onClearWindow={() => {}} />);
-  });
-
-  it('EnergyChart renders without throwing', () => {
-    render(<EnergyChart onWindowSelect={() => {}} />);
+  it('ChartPanel renders without throwing', () => {
+    render(<ChartPanel />);
   });
 });

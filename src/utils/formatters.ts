@@ -50,6 +50,32 @@ export function formatDateLabel(range: TimeRange, start: number, end: number, lo
   return `${fmt(start)} – ${fmt(end)}`;
 }
 
+export const CHART_FONT = 'JetBrains Mono, monospace';
+export const CHART_FONT_UI = 'Barlow Condensed, Arial Narrow, sans-serif';
+
+export const X_TICK_STEP: Record<TimeRange, number> = {
+  today: 2 * 3600,
+  '24h': 2 * 3600,
+  '7d': 24 * 3600,
+  '30d': 4 * 24 * 3600,
+};
+
+export function computeXTicks(range: TimeRange, start: number, end: number): number[] {
+  const step = X_TICK_STEP[range];
+  const first = Math.ceil(start / step) * step;
+  const ticks: number[] = [];
+  for (let t = first; t <= end; t += step) ticks.push(t);
+  return ticks;
+}
+
+export function formatChartTick(range: TimeRange, epochSeconds: number): string {
+  const opts: Intl.DateTimeFormatOptions =
+    range === 'today' || range === '24h'
+      ? { hour: '2-digit', minute: '2-digit', hour12: false }
+      : { month: 'short', day: 'numeric' };
+  return new Intl.DateTimeFormat(undefined, opts).format(new Date(epochSeconds * 1000));
+}
+
 /** Negate consumed and grid-export values so they render below the axis. */
 export function toDisplayData(windows: readonly WindowItem[]): WindowItem[] {
   return windows.map((w) => ({

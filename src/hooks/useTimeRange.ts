@@ -37,9 +37,9 @@ export function useTimeRange(): {
   end: number;
   limit: number;
 } {
-  const [range, setRangeState] = useState<TimeRange>('24h');
+  const [range, setRangeState] = useState<TimeRange>('today');
   // Lazy initializer: Date.now() called once at mount, not on every render.
-  const [bounds, setBounds] = useState(() => computeBounds('24h'));
+  const [bounds, setBounds] = useState(() => computeBounds('today'));
 
   // setRange updates both the range label and snaps start/end to the new "now".
   const setRange = useCallback((r: TimeRange) => {

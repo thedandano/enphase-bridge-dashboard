@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   AreaChart, Area,
   BarChart, Bar, ReferenceLine,
@@ -6,14 +5,18 @@ import {
 } from "recharts";
 import type { CategoricalChartFunc } from "recharts/types/chart/types";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
-import { useTimeRange } from "@/hooks/useTimeRange";
 import type { TimeRange } from "@/api/types";
 import { fetchWindows } from "@/api/energy";
 import type { WindowsResponse, WindowItem } from "@/api/types";
-import { toDisplayData, formatDateLabel } from "@/utils/formatters";
+import { toDisplayData, formatDateLabel, computeXTicks, formatChartTick, CHART_FONT } from "@/utils/formatters";
 import styles from "./EnergyChart.module.css";
 
 interface Props {
+  range: TimeRange;
+  start: number;
+  end: number;
+  limit: number;
+  chartStyle: 'area' | 'bar';
   onWindowSelect: (windowStart: number) => void;
 }
 
@@ -28,39 +31,10 @@ const NEGATED_LABELS = new Set<string>(
   SERIES.filter((s) => s.key === "wh_consumed" || s.key === "wh_grid_export").map((s) => s.label)
 );
 
-const RANGES: TimeRange[] = ["today", "24h", "7d", "30d"];
 
-const X_TICK_STEP: Record<TimeRange, number> = {
-  today: 2 * 3600,
-  "24h": 2 * 3600,
-  "7d": 24 * 3600,
-  "30d": 4 * 24 * 3600,
-};
+export function EnergyChart({ range, start, end, limit, chartStyle, onWindowSelect }: Props) {
+  const { data } = useAutoRefresh<WindowsResponse>(() => fetchWindows(start, end, limit), [start]);
 
-function computeXTicks(range: TimeRange, start: number, end: number): number[] {
-  const step = X_TICK_STEP[range];
-  const first = Math.ceil(start / step) * step;
-  const ticks: number[] = [];
-  for (let t = first; t <= end; t += step) ticks.push(t);
-  return ticks;
-}
-
-function formatTick(range: TimeRange, epochSeconds: number): string {
-  const opts: Intl.DateTimeFormatOptions =
-    range === "today" || range === "24h"
-      ? { hour: "2-digit", minute: "2-digit", hour12: false }
-      : { month: "short", day: "numeric" };
-  return new Intl.DateTimeFormat(undefined, opts).format(new Date(epochSeconds * 1000));
-}
-
-export function EnergyChart({ onWindowSelect }: Props) {
-  const { range, setRange, start, end, limit } = useTimeRange();
-  const { data } = useAutoRefresh<WindowsResponse>(() => fetchWindows(start, end, limit));
-
-  const [chartStyle, setChartStyle] = useState<"area" | "bar">(() => {
-    const v = localStorage.getItem("energyChart.style");
-    return v === "area" || v === "bar" ? v : "bar";
-  });
   const windows: WindowItem[] = data ? [...data.windows] : [];
   const displayData = toDisplayData(windows);
 
@@ -98,49 +72,8 @@ export function EnergyChart({ onWindowSelect }: Props) {
 
   return (
     <div className={styles.container}>
-      <h2 className={styles.title}>energy flow</h2>
+      <h2 className={styles.title}>ENERGY FLOW</h2>
       <p className={styles.dateLabel}>{formatDateLabel(range, start, end)}</p>
-      <div className={styles.controls}>
-        <div style={{ display: "flex", gap: "0.5rem" }}>
-          {RANGES.map((r) => (
-            <button
-              key={r}
-              className={r === range ? styles.activeBtn : styles.btn}
-              onClick={() => setRange(r)}
-            >
-              {r}
-            </button>
-          ))}
-        </div>
-        <div className={styles.styleToggle}>
-          <button
-            className={
-              chartStyle === "area"
-                ? `${styles.styleBtn} ${styles.styleBtnActive}`
-                : styles.styleBtn
-            }
-            onClick={() => {
-              setChartStyle("area");
-              localStorage.setItem("energyChart.style", "area");
-            }}
-          >
-            ∿ Area
-          </button>
-          <button
-            className={
-              chartStyle === "bar"
-                ? `${styles.styleBtn} ${styles.styleBtnActive}`
-                : styles.styleBtn
-            }
-            onClick={() => {
-              setChartStyle("bar");
-              localStorage.setItem("energyChart.style", "bar");
-            }}
-          >
-            ▐ Bars
-          </button>
-        </div>
-      </div>
 
       {isEmpty ? (
         <div className={styles.empty}>No energy data for this range</div>
@@ -149,15 +82,15 @@ export function EnergyChart({ onWindowSelect }: Props) {
             <AreaChart data={displayData} onClick={handleClick} style={{ cursor: "pointer" }}>
               <XAxis
                 dataKey="window_start"
-                tickFormatter={(v: number) => formatTick(range, v)}
+                tickFormatter={(v: number) => formatChartTick(range, v)}
                 ticks={xTicks}
                 stroke="#9281BB"
-                tick={{ fill: "#9281BB", fontSize: 11, fontFamily: "JetBrains Mono, monospace" }}
+                tick={{ fill: "#9281BB", fontSize: 11, fontFamily: CHART_FONT }}
               />
               <YAxis
                 stroke="#9281BB"
-                tick={{ fill: "#9281BB", fontSize: 11, fontFamily: "JetBrains Mono, monospace" }}
-                label={{ value: "Wh", angle: -90, position: "insideLeft", fill: "#9281BB", fontSize: 11, fontFamily: "JetBrains Mono, monospace" }}
+                tick={{ fill: "#9281BB", fontSize: 11, fontFamily: CHART_FONT }}
+                label={{ value: "Wh", angle: -90, position: "insideLeft", fill: "#9281BB", fontSize: 11, fontFamily: CHART_FONT }}
                 domain={[-maxWh, maxWh]}
                 ticks={yTicks}
                 tickFormatter={yTickFormatter}
@@ -167,10 +100,10 @@ export function EnergyChart({ onWindowSelect }: Props) {
                   background: "#131217",
                   border: "1px solid rgba(248,248,242,0.12)",
                   borderRadius: "6px",
-                  fontFamily: "JetBrains Mono, monospace",
+                  fontFamily: CHART_FONT,
                   fontSize: "12px",
                 }}
-                labelFormatter={(v: unknown) => (typeof v === "number" ? formatTick(range, v) : String(v))}
+                labelFormatter={(v: unknown) => (typeof v === "number" ? formatChartTick(range, v) : String(v))}
                 formatter={(value: unknown, name: unknown) => {
                   const v = typeof value === "number" ? value : 0;
                   const n = String(name ?? "");
@@ -212,15 +145,15 @@ export function EnergyChart({ onWindowSelect }: Props) {
             <BarChart data={displayData} onClick={handleClick} style={{ cursor: "pointer" }} stackOffset="sign">
               <XAxis
                 dataKey="window_start"
-                tickFormatter={(v: number) => formatTick(range, v)}
+                tickFormatter={(v: number) => formatChartTick(range, v)}
                 ticks={xTicks}
                 stroke="#9281BB"
-                tick={{ fill: "#9281BB", fontSize: 11, fontFamily: "JetBrains Mono, monospace" }}
+                tick={{ fill: "#9281BB", fontSize: 11, fontFamily: CHART_FONT }}
               />
               <YAxis
                 stroke="#9281BB"
-                tick={{ fill: "#9281BB", fontSize: 11, fontFamily: "JetBrains Mono, monospace" }}
-                label={{ value: "Wh", angle: -90, position: "insideLeft", fill: "#9281BB", fontSize: 11, fontFamily: "JetBrains Mono, monospace" }}
+                tick={{ fill: "#9281BB", fontSize: 11, fontFamily: CHART_FONT }}
+                label={{ value: "Wh", angle: -90, position: "insideLeft", fill: "#9281BB", fontSize: 11, fontFamily: CHART_FONT }}
                 domain={[-maxWh, maxWh]}
                 ticks={yTicks}
                 tickFormatter={yTickFormatter}
@@ -231,10 +164,10 @@ export function EnergyChart({ onWindowSelect }: Props) {
                   background: "#131217",
                   border: "1px solid rgba(248,248,242,0.12)",
                   borderRadius: "6px",
-                  fontFamily: "JetBrains Mono, monospace",
+                  fontFamily: CHART_FONT,
                   fontSize: "12px",
                 }}
-                labelFormatter={(v: unknown) => (typeof v === "number" ? formatTick(range, v) : String(v))}
+                labelFormatter={(v: unknown) => (typeof v === "number" ? formatChartTick(range, v) : String(v))}
                 formatter={(value: unknown, name: unknown) => {
                   const v = typeof value === "number" ? value : 0;
                   const n = String(name ?? "");

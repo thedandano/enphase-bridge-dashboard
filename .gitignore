@@ -16,6 +16,7 @@ dist-ssr
 
 .superpowers/
 .worktrees/
+docs/superpowers/
 
 # Editor directories and files
 .vscode/*

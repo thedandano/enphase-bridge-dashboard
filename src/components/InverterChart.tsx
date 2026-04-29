@@ -151,17 +151,17 @@ function DrillDownChart({ windowTs, colorMap, onBack }: DrillDownProps) {
         <BarChart data={barData} margin={{ top: 8, right: 16, left: 0, bottom: 40 }}>
           <XAxis
             dataKey="serial"
-            stroke="#7970A9"
-            tick={{ fill: '#7970A9', fontSize: 10, fontFamily: 'JetBrains Mono, monospace' }}
+            stroke="#9281BB"
+            tick={{ fill: '#9281BB', fontSize: 10, fontFamily: 'JetBrains Mono, monospace' }}
             tickLine={false}
             angle={-35}
             textAnchor="end"
             interval={0}
           />
           <YAxis
-            stroke="#7970A9"
-            tick={{ fill: '#7970A9', fontSize: 11 }}
-            label={{ value: 'W', angle: -90, position: 'insideLeft', fill: '#7970A9', fontSize: 11 }}
+            stroke="#9281BB"
+            tick={{ fill: '#9281BB', fontSize: 11, fontFamily: 'JetBrains Mono, monospace' }}
+            label={{ value: 'W', angle: -90, position: 'insideLeft', fill: '#9281BB', fontSize: 11, fontFamily: 'JetBrains Mono, monospace' }}
           />
           <Tooltip
             contentStyle={{
@@ -305,20 +305,21 @@ export function InverterChart({ selectedWindowTs, onClearWindow, onWindowSelect 
                 <XAxis
                   dataKey="windowStart"
                   tickFormatter={formatTick}
-                  stroke="#7970A9"
-                  tick={{ fill: '#7970A9', fontSize: 10 }}
+                  stroke="#9281BB"
+                  tick={{ fill: '#9281BB', fontSize: 11, fontFamily: 'JetBrains Mono, monospace' }}
                   tickLine={false}
                   interval="preserveStartEnd"
                 />
                 <YAxis
-                  stroke="#7970A9"
-                  tick={{ fill: '#7970A9', fontSize: 11 }}
+                  stroke="#9281BB"
+                  tick={{ fill: '#9281BB', fontSize: 11, fontFamily: 'JetBrains Mono, monospace' }}
                   label={{
                     value: 'W',
                     angle: -90,
                     position: 'insideLeft',
-                    fill: '#7970A9',
+                    fill: '#9281BB',
                     fontSize: 11,
+                    fontFamily: 'JetBrains Mono, monospace',
                   }}
                 />
                 <Tooltip

@@ -42,6 +42,32 @@ The system SHALL render bars for offline inverters (`is_online: false`) at their
 - **WHEN** a snapshot has `is_online: false`
 - **THEN** the corresponding bar segment is rendered with muted/reduced-opacity styling
 
+### Requirement: Sparse x-axis ticks matching EnergyChart step intervals
+The InverterChart x-axis SHALL display the same step-aligned sparse ticks as EnergyChart — every 2 hours for today/24h, daily for 7d, every 4 days for 30d — rather than showing every data point.
+
+#### Scenario: today/24h range x-ticks
+- **WHEN** the today or 24h range is active
+- **THEN** the x-axis shows tick labels every 2 hours, aligned to clock-hour boundaries
+
+#### Scenario: 7d range x-ticks
+- **WHEN** the 7d range is active
+- **THEN** the x-axis shows one tick label per day
+
+#### Scenario: 30d range x-ticks
+- **WHEN** the 30d range is active
+- **THEN** the x-axis shows one tick label every 4 days
+
+### Requirement: Range-aware x-axis tick format
+The InverterChart x-axis tick formatter SHALL display HH:MM for today/24h ranges and "MMM DD" (e.g., "Apr 27") for 7d/30d ranges.
+
+#### Scenario: today/24h tick format
+- **WHEN** the today or 24h range is active
+- **THEN** x-axis ticks are formatted as 24-hour HH:MM
+
+#### Scenario: 7d/30d tick format
+- **WHEN** the 7d or 30d range is active
+- **THEN** x-axis ticks are formatted as abbreviated month + day (e.g., "Apr 27")
+
 ### Requirement: Serial number filter
 The system SHALL provide a text input that filters the visible bars to only those serials matching the filter string (case-insensitive substring match on `serial_number`).
 

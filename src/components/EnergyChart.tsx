@@ -7,6 +7,15 @@ import { fetchWindows } from "@/api/energy";
 import type { WindowsResponse, WindowItem } from "@/api/types";
 import styles from "./EnergyChart.module.css";
 
+// eslint-disable-next-line react-refresh/only-export-components
+export function toDisplayData(windows: readonly WindowItem[]): WindowItem[] {
+  return windows.map((w) => ({
+    ...w,
+    wh_consumed:    -w.wh_consumed,
+    wh_grid_export: -w.wh_grid_export,
+  }));
+}
+
 interface Props {
   onWindowSelect: (windowStart: number) => void;
 }

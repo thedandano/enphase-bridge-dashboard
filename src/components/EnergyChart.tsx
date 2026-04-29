@@ -60,6 +60,7 @@ export function EnergyChart({ onWindowSelect }: Props) {
 
   return (
     <div className={styles.container}>
+      <h2 className={styles.title}>energy flow</h2>
       <div className={styles.controls}>
         {RANGES.map((r) => (
           <button

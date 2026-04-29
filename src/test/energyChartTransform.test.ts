@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { WindowItem } from '@/api/types';
-import { toDisplayData } from '@/components/EnergyChart';
+import { toDisplayData } from '@/utils/formatters';
 
 const base: WindowItem = {
   window_start: 1_000_000,

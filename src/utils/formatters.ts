@@ -40,9 +40,9 @@ export function badgeColor(online: number, total: number): string {
 }
 
 /** Format the date label shown above the chart for each time range. */
-export function formatDateLabel(range: TimeRange, start: number, end: number, locale?: string): string {
+export function formatDateLabel(range: TimeRange, start: number, end: number, locale?: string, timeZone?: string): string {
   const fmt = (epochSec: number) =>
-    new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric' }).format(
+    new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric', ...(timeZone && { timeZone }) }).format(
       new Date(epochSec * 1000)
     );
   if (range === 'today') return `Today · ${fmt(end)}`;

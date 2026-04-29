@@ -38,9 +38,10 @@ export function EnergyChart({ onWindowSelect }: Props) {
   const { range, setRange, start, end, limit } = useTimeRange();
   const { data } = useAutoRefresh<WindowsResponse>(() => fetchWindows(start, end, limit));
 
-  const [chartStyle, setChartStyle] = useState<"area" | "bar">(
-    () => (localStorage.getItem("energyChart.style") as "area" | "bar") ?? "bar"
-  );
+  const [chartStyle, setChartStyle] = useState<"area" | "bar">(() => {
+    const v = localStorage.getItem("energyChart.style");
+    return v === "area" || v === "bar" ? v : "bar";
+  });
   const windows: WindowItem[] = data ? [...data.windows] : [];
   const displayData = toDisplayData(windows);
 
@@ -206,7 +207,7 @@ export function EnergyChart({ onWindowSelect }: Props) {
                 }}
               />
               <Bar dataKey="wh_produced"    stackId="pos" fill="#8AFF80" fillOpacity={0.82} name="Production" />
-              <Bar dataKey="wh_grid_import" stackId="pos" fill="#FF9580" fillOpacity={0.75} name="Import" />
+              <Bar dataKey="wh_grid_import" stackId="pos" fill="#FF9580" fillOpacity={0.75} name="Grid import" />
               <Bar dataKey="wh_consumed"    stackId="neg" fill="#FFCA80" fillOpacity={0.75} name="Consumption" />
               <Bar dataKey="wh_grid_export" stackId="neg" fill="#80FFEA" fillOpacity={0.68} name="Grid export" />
             </BarChart>

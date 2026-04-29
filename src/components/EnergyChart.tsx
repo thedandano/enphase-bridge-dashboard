@@ -7,10 +7,10 @@ import {
 import type { CategoricalChartFunc } from "recharts/types/chart/types";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { useTimeRange } from "@/hooks/useTimeRange";
-import type { TimeRange } from "@/hooks/useTimeRange";
+import type { TimeRange } from "@/api/types";
 import { fetchWindows } from "@/api/energy";
 import type { WindowsResponse, WindowItem } from "@/api/types";
-import { toDisplayData } from "@/utils/formatters";
+import { toDisplayData, formatDateLabel } from "@/utils/formatters";
 import styles from "./EnergyChart.module.css";
 
 interface Props {
@@ -20,18 +20,37 @@ interface Props {
 const SERIES = [
   { key: "wh_produced", label: "Production", color: "#8AFF80" },
   { key: "wh_consumed", label: "Consumption", color: "#FFCA80" },
-  { key: "wh_grid_export", label: "Grid export", color: "#80FFEA" },
-  { key: "wh_grid_import", label: "Grid import", color: "#FF9580" },
+  { key: "wh_grid_export", label: "Grid export", color: "#888888" },
+  { key: "wh_grid_import", label: "Grid import", color: "#888888" },
 ] as const;
 
-const RANGES: TimeRange[] = ["24h", "7d", "30d"];
+const NEGATED_LABELS = new Set<string>(
+  SERIES.filter((s) => s.key === "wh_consumed" || s.key === "wh_grid_export").map((s) => s.label)
+);
 
-function formatTick(epochSeconds: number): string {
-  return new Intl.DateTimeFormat(undefined, {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).format(new Date(epochSeconds * 1000));
+const RANGES: TimeRange[] = ["today", "24h", "7d", "30d"];
+
+const X_TICK_STEP: Record<TimeRange, number> = {
+  today: 2 * 3600,
+  "24h": 2 * 3600,
+  "7d": 24 * 3600,
+  "30d": 4 * 24 * 3600,
+};
+
+function computeXTicks(range: TimeRange, start: number, end: number): number[] {
+  const step = X_TICK_STEP[range];
+  const first = Math.ceil(start / step) * step;
+  const ticks: number[] = [];
+  for (let t = first; t <= end; t += step) ticks.push(t);
+  return ticks;
+}
+
+function formatTick(range: TimeRange, epochSeconds: number): string {
+  const opts: Intl.DateTimeFormatOptions =
+    range === "today" || range === "24h"
+      ? { hour: "2-digit", minute: "2-digit", hour12: false }
+      : { month: "short", day: "numeric" };
+  return new Intl.DateTimeFormat(undefined, opts).format(new Date(epochSeconds * 1000));
 }
 
 export function EnergyChart({ onWindowSelect }: Props) {
@@ -45,7 +64,9 @@ export function EnergyChart({ onWindowSelect }: Props) {
   const windows: WindowItem[] = data ? [...data.windows] : [];
   const displayData = toDisplayData(windows);
 
-  const maxWh =
+  const xTicks = computeXTicks(range, start, end);
+
+  const rawMax =
     windows.length > 0
       ? Math.max(
           ...windows.map((w) =>
@@ -54,8 +75,16 @@ export function EnergyChart({ onWindowSelect }: Props) {
               w.wh_consumed + w.wh_grid_export,
             )
           )
-        ) * 1.1
+        )
       : 1000;
+
+  // Round up to a nice step so ticks are evenly spaced and human-readable.
+  const HALF_STEPS = 2;
+  const magnitude = Math.pow(10, Math.floor(Math.log10(rawMax / HALF_STEPS)));
+  const niceStep = Math.ceil((rawMax / HALF_STEPS) / magnitude) * magnitude;
+  const maxWh = niceStep * HALF_STEPS;
+  const yTicks = Array.from({ length: HALF_STEPS * 2 + 1 }, (_, i) => (i - HALF_STEPS) * niceStep);
+  const yTickFormatter = (v: number) => String(Math.abs(v));
 
   const isEmpty = data !== null && windows.length === 0;
 
@@ -70,6 +99,7 @@ export function EnergyChart({ onWindowSelect }: Props) {
   return (
     <div className={styles.container}>
       <h2 className={styles.title}>energy flow</h2>
+      <p className={styles.dateLabel}>{formatDateLabel(range, start, end)}</p>
       <div className={styles.controls}>
         <div style={{ display: "flex", gap: "0.5rem" }}>
           {RANGES.map((r) => (
@@ -119,7 +149,8 @@ export function EnergyChart({ onWindowSelect }: Props) {
             <AreaChart data={displayData} onClick={handleClick} style={{ cursor: "pointer" }}>
               <XAxis
                 dataKey="window_start"
-                tickFormatter={(v: number) => formatTick(v)}
+                tickFormatter={(v: number) => formatTick(range, v)}
+                ticks={xTicks}
                 stroke="#9281BB"
                 tick={{ fill: "#9281BB", fontSize: 11, fontFamily: "JetBrains Mono, monospace" }}
               />
@@ -128,6 +159,8 @@ export function EnergyChart({ onWindowSelect }: Props) {
                 tick={{ fill: "#9281BB", fontSize: 11, fontFamily: "JetBrains Mono, monospace" }}
                 label={{ value: "Wh", angle: -90, position: "insideLeft", fill: "#9281BB", fontSize: 11, fontFamily: "JetBrains Mono, monospace" }}
                 domain={[-maxWh, maxWh]}
+                ticks={yTicks}
+                tickFormatter={yTickFormatter}
               />
               <Tooltip
                 contentStyle={{
@@ -137,12 +170,12 @@ export function EnergyChart({ onWindowSelect }: Props) {
                   fontFamily: "JetBrains Mono, monospace",
                   fontSize: "12px",
                 }}
-                labelFormatter={(v: unknown) => (typeof v === "number" ? formatTick(v) : String(v))}
+                labelFormatter={(v: unknown) => (typeof v === "number" ? formatTick(range, v) : String(v))}
                 formatter={(value: unknown, name: unknown) => {
                   const v = typeof value === "number" ? value : 0;
                   const n = String(name ?? "");
-                  const display = ["Consumption", "Grid export"].includes(n) ? Math.abs(v) : v;
-                  return [`${display} Wh`, n];
+                  const display = NEGATED_LABELS.has(n) ? Math.abs(v) : v;
+                  return [`${display.toFixed(2)} Wh`, n];
                 }}
               />
               {SERIES.map((s, i) => (
@@ -152,7 +185,7 @@ export function EnergyChart({ onWindowSelect }: Props) {
                   dataKey={s.key}
                   stroke={s.color}
                   fill={s.color}
-                  fillOpacity={0.15}
+                  fillOpacity={0.25}
                   strokeWidth={2}
                   name={s.label}
                   dot={(props: unknown) => {
@@ -176,10 +209,11 @@ export function EnergyChart({ onWindowSelect }: Props) {
           </ResponsiveContainer>
         ) : (
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={displayData} onClick={handleClick} style={{ cursor: "pointer" }}>
+            <BarChart data={displayData} onClick={handleClick} style={{ cursor: "pointer" }} stackOffset="sign">
               <XAxis
                 dataKey="window_start"
-                tickFormatter={(v: number) => formatTick(v)}
+                tickFormatter={(v: number) => formatTick(range, v)}
+                ticks={xTicks}
                 stroke="#9281BB"
                 tick={{ fill: "#9281BB", fontSize: 11, fontFamily: "JetBrains Mono, monospace" }}
               />
@@ -188,6 +222,8 @@ export function EnergyChart({ onWindowSelect }: Props) {
                 tick={{ fill: "#9281BB", fontSize: 11, fontFamily: "JetBrains Mono, monospace" }}
                 label={{ value: "Wh", angle: -90, position: "insideLeft", fill: "#9281BB", fontSize: 11, fontFamily: "JetBrains Mono, monospace" }}
                 domain={[-maxWh, maxWh]}
+                ticks={yTicks}
+                tickFormatter={yTickFormatter}
               />
               <ReferenceLine y={0} stroke="#6272a4" strokeDasharray="5 4" />
               <Tooltip
@@ -198,18 +234,18 @@ export function EnergyChart({ onWindowSelect }: Props) {
                   fontFamily: "JetBrains Mono, monospace",
                   fontSize: "12px",
                 }}
-                labelFormatter={(v: unknown) => (typeof v === "number" ? formatTick(v) : String(v))}
+                labelFormatter={(v: unknown) => (typeof v === "number" ? formatTick(range, v) : String(v))}
                 formatter={(value: unknown, name: unknown) => {
                   const v = typeof value === "number" ? value : 0;
                   const n = String(name ?? "");
-                  const display = ["Consumption", "Grid export"].includes(n) ? Math.abs(v) : v;
-                  return [`${display} Wh`, n];
+                  const display = NEGATED_LABELS.has(n) ? Math.abs(v) : v;
+                  return [`${display.toFixed(2)} Wh`, n];
                 }}
               />
-              <Bar dataKey="wh_produced"    stackId="pos" fill="#8AFF80" fillOpacity={0.82} name="Production" />
-              <Bar dataKey="wh_grid_import" stackId="pos" fill="#FF9580" fillOpacity={0.75} name="Grid import" />
-              <Bar dataKey="wh_consumed"    stackId="neg" fill="#FFCA80" fillOpacity={0.75} name="Consumption" />
-              <Bar dataKey="wh_grid_export" stackId="neg" fill="#80FFEA" fillOpacity={0.68} name="Grid export" />
+              <Bar dataKey="wh_produced"    stackId="energy" fill="#8AFF80" fillOpacity={1.0}  name="Production" />
+              <Bar dataKey="wh_grid_import" stackId="energy" fill="#888888" fillOpacity={0.75} name="Grid import" />
+              <Bar dataKey="wh_consumed"    stackId="energy" fill="#FFCA80" fillOpacity={1.0}  name="Consumption" />
+              <Bar dataKey="wh_grid_export" stackId="energy" fill="#888888" fillOpacity={0.68} name="Grid export" />
             </BarChart>
           </ResponsiveContainer>
         )}

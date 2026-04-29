@@ -1,5 +1,7 @@
 // All timestamp fields are Unix epoch integers (i64), never Date or string.
 
+export type TimeRange = 'today' | '24h' | '7d' | '30d';
+
 export interface HealthResponse {
   status: string;
   last_window_start: number | null;

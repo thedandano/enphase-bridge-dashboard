@@ -95,5 +95,14 @@
   letter-spacing: 0.06em;
   text-align: center;
   color: var(--text-primary);
+  margin: 0 0 0.25rem;
+}
+
+.dateLabel {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--fg-muted);
+  text-align: center;
   margin: 0 0 0.75rem;
+  opacity: 0.8;
 }

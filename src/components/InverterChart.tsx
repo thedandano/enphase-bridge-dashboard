@@ -5,7 +5,7 @@ import {
 import type { CategoricalChartFunc } from 'recharts/types/chart/types';
 import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { useTimeRange } from '@/hooks/useTimeRange';
-import type { TimeRange } from '@/hooks/useTimeRange';
+import type { TimeRange } from '@/api/types';
 import { fetchSnapshots, fetchSnapshotsByWindow } from '@/api/inverters';
 import type {
   SnapshotsResponse,

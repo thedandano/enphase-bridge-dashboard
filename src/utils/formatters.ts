@@ -1,14 +1,14 @@
 // Pure formatting helpers extracted for testability
-import type { WindowItem } from '@/api/types';
+import type { WindowItem, TimeRange } from '@/api/types';
 
 /** Convert Wh from a complete 15-min window to a kW string (×4 factor). */
 export function toKw(wh: number): string {
   return `${(wh * 4 / 1000).toFixed(2)} kW`;
 }
 
-/** Format raw Wh for an in-progress window. */
+/** Format raw Wh for an in-progress window. Matches the 2-decimal precision of toKw. */
 export function toWh(wh: number): string {
-  return `~${Math.round(wh)} Wh`;
+  return `~${wh.toFixed(2)} Wh`;
 }
 
 /** Format uptime seconds as "Xd Yh" or "Zm". */
@@ -37,6 +37,17 @@ export function badgeColor(online: number, total: number): string {
   if (online === total) return 'var(--green)';
   if (online === 0) return 'var(--red)';
   return 'var(--orange)';
+}
+
+/** Format the date label shown above the chart for each time range. */
+export function formatDateLabel(range: TimeRange, start: number, end: number, locale?: string): string {
+  const fmt = (epochSec: number) =>
+    new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric' }).format(
+      new Date(epochSec * 1000)
+    );
+  if (range === 'today') return `Today · ${fmt(end)}`;
+  if (range === '24h') return `Last 24h · ${fmt(end)}`;
+  return `${fmt(start)} – ${fmt(end)}`;
 }
 
 /** Negate consumed and grid-export values so they render below the axis. */

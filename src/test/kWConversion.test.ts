@@ -16,15 +16,19 @@ describe('toKw', () => {
 });
 
 describe('toWh', () => {
-  it('returns raw Wh for incomplete windows', () => {
-    expect(toWh(250)).toBe('~250 Wh');
+  it('returns raw Wh for incomplete windows with 2 decimal places', () => {
+    expect(toWh(250)).toBe('~250.00 Wh');
   });
 
-  it('rounds fractional Wh', () => {
-    expect(toWh(250.7)).toBe('~251 Wh');
+  it('formats fractional Wh to 2 decimal places', () => {
+    expect(toWh(250.7)).toBe('~250.70 Wh');
   });
 
   it('handles zero', () => {
-    expect(toWh(0)).toBe('~0 Wh');
+    expect(toWh(0)).toBe('~0.00 Wh');
+  });
+
+  it('produces ~NaN Wh for NaN input', () => {
+    expect(toWh(NaN)).toBe('~NaN Wh');
   });
 });

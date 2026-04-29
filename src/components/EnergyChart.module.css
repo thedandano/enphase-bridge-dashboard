@@ -8,8 +8,37 @@
 
 .controls {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 0.5rem;
   margin-bottom: 1rem;
+}
+
+.styleToggle {
+  display: flex;
+  border: 1px solid rgba(121, 112, 169, 0.35);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.styleBtn {
+  padding: 4px 10px;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+
+.styleBtn + .styleBtn {
+  border-left: 1px solid rgba(121, 112, 169, 0.35);
+}
+
+.styleBtnActive {
+  background: rgba(138, 255, 128, 0.1);
+  color: var(--signal-production);
 }
 
 .btn,
@@ -57,4 +86,14 @@
   color: var(--fg-muted);
   opacity: 0.7;
   text-align: center;
+}
+
+.title {
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-align: center;
+  color: var(--text-primary);
+  margin: 0 0 0.75rem;
 }

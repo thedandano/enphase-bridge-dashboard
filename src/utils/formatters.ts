@@ -1,4 +1,5 @@
 // Pure formatting helpers extracted for testability
+import type { WindowItem } from '@/api/types';
 
 /** Convert Wh from a complete 15-min window to a kW string (×4 factor). */
 export function toKw(wh: number): string {
@@ -36,4 +37,13 @@ export function badgeColor(online: number, total: number): string {
   if (online === total) return 'var(--green)';
   if (online === 0) return 'var(--red)';
   return 'var(--orange)';
+}
+
+/** Negate consumed and grid-export values so they render below the axis. */
+export function toDisplayData(windows: readonly WindowItem[]): WindowItem[] {
+  return windows.map((w) => ({
+    ...w,
+    wh_consumed: -w.wh_consumed,
+    wh_grid_export: -w.wh_grid_export,
+  }));
 }

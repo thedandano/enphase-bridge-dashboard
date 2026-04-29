@@ -5,6 +5,7 @@ import { useTimeRange } from "@/hooks/useTimeRange";
 import type { TimeRange } from "@/hooks/useTimeRange";
 import { fetchWindows } from "@/api/energy";
 import type { WindowsResponse, WindowItem } from "@/api/types";
+import { toDisplayData } from "@/utils/formatters";
 import styles from "./EnergyChart.module.css";
 
 interface Props {
@@ -33,6 +34,20 @@ export function EnergyChart({ onWindowSelect }: Props) {
   const { data } = useAutoRefresh<WindowsResponse>(() => fetchWindows(start, end, limit));
 
   const windows: WindowItem[] = data ? [...data.windows] : [];
+  const displayData = toDisplayData(windows);
+
+  const maxWh =
+    windows.length > 0
+      ? Math.max(
+          ...windows.map((w) =>
+            Math.max(
+              w.wh_produced + w.wh_grid_import,
+              w.wh_consumed + w.wh_grid_export,
+            )
+          )
+        ) * 1.1
+      : 1000;
+
   const isEmpty = data !== null && windows.length === 0;
 
   const handleClick: CategoricalChartFunc = (chartData) => {
@@ -61,25 +76,36 @@ export function EnergyChart({ onWindowSelect }: Props) {
         <div className={styles.empty}>No energy data for this range</div>
       ) : (
         <ResponsiveContainer width="100%" height={300}>
-          <AreaChart data={windows} onClick={handleClick} style={{ cursor: "pointer" }}>
+          <AreaChart data={displayData} onClick={handleClick} style={{ cursor: "pointer" }}>
             <XAxis
               dataKey="window_start"
               tickFormatter={(v: number) => formatTick(v)}
-              stroke="#7970A9"
-              tick={{ fill: "#7970A9", fontSize: 11 }}
+              stroke="#9281BB"
+              tick={{ fill: "#9281BB", fontSize: 11, fontFamily: "JetBrains Mono, monospace" }}
             />
             <YAxis
-              stroke="#7970A9"
-              tick={{ fill: "#7970A9", fontSize: 11 }}
-              label={{ value: "Wh", angle: -90, position: "insideLeft", fill: "#7970A9" }}
+              stroke="#9281BB"
+              tick={{ fill: "#9281BB", fontSize: 11, fontFamily: "JetBrains Mono, monospace" }}
+              label={{ value: "Wh", angle: -90, position: "insideLeft", fill: "#9281BB", fontSize: 11, fontFamily: "JetBrains Mono, monospace" }}
+              domain={[-maxWh, maxWh]}
             />
             <Tooltip
               contentStyle={{
-                background: "#3A3949",
+                background: "#131217",
                 border: "1px solid rgba(248,248,242,0.12)",
                 borderRadius: "6px",
+                fontFamily: "JetBrains Mono, monospace",
+                fontSize: "12px",
               }}
               labelFormatter={(v: unknown) => (typeof v === "number" ? formatTick(v) : String(v))}
+              formatter={(value: unknown, name: unknown) => {
+                const num = typeof value === "number" ? value : 0;
+                const label = typeof name === "string" ? name : String(name ?? "");
+                const display = ["Consumption", "Grid export"].includes(label)
+                  ? Math.abs(num)
+                  : num;
+                return [`${display} Wh`, label];
+              }}
             />
             {SERIES.map((s, i) => (
               <Area

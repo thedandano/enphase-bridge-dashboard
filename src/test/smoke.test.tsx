@@ -1,7 +1,8 @@
 import { describe, it, vi, beforeEach } from 'vitest';
 import { render } from '@testing-library/react';
 import { Header } from '@/components/Header';
-import { LiveStats } from '@/components/LiveStats';
+import { RightNowSection } from '@/components/RightNowSection';
+import { TodaySummary } from '@/components/TodaySummary';
 import { ArrayHealthPanel } from '@/components/ArrayHealthPanel';
 import { TrueupPanel } from '@/components/TrueupPanel';
 import { InverterChart } from '@/components/InverterChart';
@@ -16,8 +17,12 @@ describe('Smoke renders', () => {
     render(<Header />);
   });
 
-  it('LiveStats renders without throwing', () => {
-    render(<LiveStats />);
+  it('RightNowSection renders without throwing', () => {
+    render(<RightNowSection />);
+  });
+
+  it('TodaySummary renders without throwing', () => {
+    render(<TodaySummary />);
   });
 
   it('ArrayHealthPanel renders without throwing', () => {

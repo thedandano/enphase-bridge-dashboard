@@ -1,11 +1,11 @@
 :root {
   /* Dracula Pro base */
-  --bg: #22212C;
-  --bg-card: #3A3949;
+  --bg: #08070A;
+  --bg-card: #131217;
   --fg: #F8F8F2;
-  --fg-muted: #7970A9;
-  --selection: #454158;
-  --comment: #7970A9;
+  --fg-muted: #9281BB;
+  --selection: #1B1921;
+  --comment: #9281BB;
 
   /* Dracula Pro signals (D4 mapping) */
   --green: #8AFF80;
@@ -59,7 +59,7 @@ body {
   /* Borders / surfaces */
   --border: rgba(248, 248, 242, 0.12);
   --border-subtle: rgba(248, 248, 242, 0.06);
-  --bg-elevated: #44435A;
+  --bg-elevated: #17161D;
 
   /* Interactive */
   --focus-ring: var(--purple);

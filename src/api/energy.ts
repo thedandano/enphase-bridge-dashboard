@@ -7,6 +7,13 @@ export function fetchLatestWindow(): Promise<WindowItem> {
   return apiFetch<WindowItem>('energy/windows/latest');
 }
 
+export function fetchTodayWindows(): Promise<WindowsResponse> {
+  const now = Math.floor(Date.now() / 1000);
+  const midnight = new Date();
+  midnight.setUTCHours(0, 0, 0, 0);
+  return fetchWindows(Math.floor(midnight.getTime() / 1000), now, 1000);
+}
+
 export function fetchWindows(
   start: number,
   end: number,

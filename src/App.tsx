@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Layout } from '@/components/Layout';
 import { Header } from '@/components/Header';
-import { LiveStats } from '@/components/LiveStats';
+import { RightNowSection } from '@/components/RightNowSection';
+import { TodaySummary } from '@/components/TodaySummary';
 import { EnergyChart } from '@/components/EnergyChart';
 import { ArrayHealthPanel } from '@/components/ArrayHealthPanel';
 import { TrueupPanel } from '@/components/TrueupPanel';
@@ -19,7 +20,8 @@ export default function App() {
           Bridge connected — first energy data appears within ~15 minutes. Polling every 60s.
         </div>
       )}
-      <LiveStats />
+      <TodaySummary />
+      <RightNowSection />
       <EnergyChart onWindowSelect={setSelectedWindowTs} />
       <div className={styles.twoCol}>
         <ArrayHealthPanel />

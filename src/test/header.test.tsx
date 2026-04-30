@@ -1,9 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import * as clientModule from '@/api/client';
 import * as autoRefreshModule from '@/hooks/useAutoRefresh';
 import { Header } from '@/components/Header';
+import { DisplayPrefsContext } from '@/context/DisplayPrefsContext';
 import type { HealthResponse } from '@/api/types';
+import type { VisibleKey } from '@/context/DisplayPrefsContext';
 
 const NOW_S = 1_700_000_000;
 
@@ -109,5 +111,69 @@ describe('Header', () => {
     const onFirstRun = vi.fn();
     render(<Header onFirstRun={onFirstRun} />);
     await waitFor(() => expect(onFirstRun).toHaveBeenCalledWith(false));
+  });
+});
+
+const ALL_VISIBLE = Object.fromEntries(
+  ['flowStrip', 'energyChart', 'inverterChart', 'inverterTotals', 'arrayHealth', 'trueup'].map(
+    (k) => [k, true],
+  ),
+) as Record<VisibleKey, boolean>;
+
+describe('Header — new buttons', () => {
+  beforeEach(() => {
+    vi.spyOn(clientModule, 'apiFetch').mockReturnValue(new Promise(() => {}));
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('gear button renders', () => {
+    render(<Header />);
+    expect(screen.getByRole('button', { name: /settings/i })).toBeInTheDocument();
+  });
+
+  it('settings panel opens on gear click', async () => {
+    render(<Header />);
+    const gearBtn = screen.getByRole('button', { name: /settings/i });
+    fireEvent.click(gearBtn);
+    expect(screen.getByText('Flow Strip')).toBeInTheDocument();
+  });
+
+  it('settings panel closes on second gear click', async () => {
+    render(<Header />);
+    const gearBtn = screen.getByRole('button', { name: /settings/i });
+    // First click: open panel
+    fireEvent.click(gearBtn);
+    expect(screen.getByText('Flow Strip')).toBeInTheDocument();
+    // Second click: use fireEvent to avoid SettingsPanel's mousedown outside-click
+    // listener treating the gear button as "outside" and racing with the toggle.
+    fireEvent.click(gearBtn);
+    expect(screen.queryByText('Flow Strip')).toBeNull();
+  });
+
+  it('tablet toggle button renders', () => {
+    render(<Header />);
+    expect(screen.getByRole('button', { name: /toggle tablet mode/i })).toBeInTheDocument();
+  });
+
+  it('tablet toggle calls toggleTabletMode', async () => {
+    const mockToggle = vi.fn();
+    const ctxValue = {
+      tabletMode: false,
+      toggleTabletMode: mockToggle,
+      isFullscreen: false,
+      visibleComponents: ALL_VISIBLE,
+      toggleComponent: () => {},
+    };
+    render(
+      <DisplayPrefsContext.Provider value={ctxValue}>
+        <Header />
+      </DisplayPrefsContext.Provider>,
+    );
+    const tabletBtn = screen.getByRole('button', { name: /toggle tablet mode/i });
+    fireEvent.click(tabletBtn);
+    expect(mockToggle).toHaveBeenCalledOnce();
   });
 });

@@ -71,4 +71,33 @@
   text-transform: uppercase;
 }
 
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.settingsWrap {
+  position: relative;
+}
+
+.iconBtn {
+  font-family: var(--font-ui);
+  font-size: 1rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--fg-muted);
+  cursor: pointer;
+  padding: 0.2rem 0.5rem;
+  line-height: 1;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.iconBtn:hover {
+  color: var(--fg);
+  border-color: var(--purple);
+}
+
 

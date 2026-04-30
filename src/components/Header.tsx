@@ -1,9 +1,11 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { fetchHealth } from '@/api/health';
 import type { HealthResponse } from '@/api/types';
 import { formatUptime, tokenStatus } from '@/utils/formatters';
 import type { TokenStatus } from '@/utils/formatters';
+import { useDisplayPrefs } from '@/context/DisplayPrefsContext';
+import { SettingsPanel } from './SettingsPanel';
 import styles from './Header.module.css';
 
 function tokenLabel(expiresAt: number, status: TokenStatus): string {
@@ -23,6 +25,8 @@ interface Props {
 
 export function Header({ onFirstRun }: Props) {
   const { data, error, secondsUntilRefresh } = useAutoRefresh<HealthResponse>(fetchHealth);
+  const { tabletMode, toggleTabletMode, isFullscreen } = useDisplayPrefs();
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const isOffline = data === null;
   const isStale = error !== null && data !== null;
@@ -89,6 +93,25 @@ export function Header({ onFirstRun }: Props) {
       >
         {isOffline ? 'OFFLINE' : isStale ? 'STALE' : 'ONLINE'}
       </span>
+      <div className={styles.actions}>
+        <div className={styles.settingsWrap}>
+          <button
+            className={styles.iconBtn}
+            onClick={() => setSettingsOpen((o) => !o)}
+            aria-label="Settings"
+          >
+            ⚙
+          </button>
+          {settingsOpen && <SettingsPanel onClose={() => setSettingsOpen(false)} />}
+        </div>
+        <button
+          className={styles.iconBtn}
+          onClick={toggleTabletMode}
+          aria-label="Toggle tablet mode"
+        >
+          {!tabletMode ? '⊡' : isFullscreen ? '⛶' : '⊞'}
+        </button>
+      </div>
     </div>
   );
 }

@@ -33,3 +33,7 @@
     padding: 0.75rem;
   }
 }
+
+.root[data-tablet="true"] .main {
+  padding: 0.75rem;
+}

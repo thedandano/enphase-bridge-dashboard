@@ -97,47 +97,6 @@
   50%       { opacity: 1;    transform: scale(1.15); }
 }
 
-/* ── Legend ──────────────────────────────────────────────────────────────── */
-
-.legend {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 0.375rem 1rem;
-  padding: 0.75rem 0.5rem 0.25rem;
-  border-top: 1px solid var(--border-subtle);
-}
-
-.legendItem {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  min-width: 0;
-}
-
-.legendSwatch {
-  width: 10px;
-  height: 10px;
-  border-radius: 2px;
-  flex-shrink: 0;
-}
-
-.legendSerial {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  color: var(--fg);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  flex: 1;
-}
-
-.legendWh {
-  font-family: var(--font-ui);
-  font-size: 0.78rem;
-  color: var(--text-secondary);
-  white-space: nowrap;
-}
-
 /* ── Back button (drill-down) ────────────────────────────────────────────── */
 
 .back {

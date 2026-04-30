@@ -3,6 +3,7 @@ import { useTimeRange } from '@/hooks/useTimeRange';
 import type { TimeRange } from '@/api/types';
 import { EnergyChart } from './EnergyChart';
 import { InverterChart } from './InverterChart';
+import { InverterDailyTotals } from './InverterDailyTotals';
 import styles from './ChartPanel.module.css';
 
 const OTHER_RANGES: TimeRange[] = ['24h', '7d', '30d'];
@@ -22,6 +23,13 @@ function todayLabel(daysBack: number): string {
   const d = new Date();
   d.setDate(d.getDate() - daysBack);
   return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(d);
+}
+
+function periodLabel(range: TimeRange, daysBack: number): string {
+  if (range === '24h') return 'LAST 24H';
+  if (range === '7d') return 'LAST 7 DAYS';
+  if (range === '30d') return 'LAST 30 DAYS';
+  return todayLabel(daysBack).toUpperCase();
 }
 
 export function ChartPanel() {
@@ -125,6 +133,11 @@ export function ChartPanel() {
         selectedWindowTs={selectedWindowTs}
         onClearWindow={() => setSelectedWindowTs(null)}
         onWindowSelect={setSelectedWindowTs}
+      />
+      <InverterDailyTotals
+        start={start}
+        end={end}
+        periodLabel={periodLabel(range, daysBack)}
       />
     </div>
   );

@@ -13,6 +13,7 @@ import type {
   TimeRange,
 } from '@/api/types';
 import { computeXTicks, formatChartTick, CHART_FONT, CHART_FONT_UI } from '@/utils/formatters';
+import { PALETTE, colorFor } from '@/utils/inverterColors';
 import styles from './InverterChart.module.css';
 
 interface Props {
@@ -22,23 +23,6 @@ interface Props {
   selectedWindowTs: number | null;
   onClearWindow: () => void;
   onWindowSelect?: (windowTs: number) => void;
-}
-
-const PALETTE = [
-  '#8AFF80',
-  '#FFCA80',
-  '#80FFEA',
-  '#FF9580',
-  '#9580FF',
-  '#FF80BF',
-  '#FFFF80',
-  '#80D4FF',
-  '#D4FF80',
-  '#FF80D4',
-];
-
-function colorFor(index: number): string {
-  return PALETTE[index % PALETTE.length];
 }
 
 interface ChartRow {
@@ -82,23 +66,11 @@ function buildOnlineMap(
   return result;
 }
 
-function computeDailyWh(snapshots: readonly SnapshotItem[]): Record<string, number> {
-  const result: Record<string, number> = {};
-  for (const snap of snapshots) {
-    result[snap.serial_number] = (result[snap.serial_number] ?? 0) + snap.watts_output * (15 / 60);
-  }
-  return result;
-}
-
 function formatFull(epochSeconds: number): string {
   return new Intl.DateTimeFormat(undefined, {
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(new Date(epochSeconds * 1000));
-}
-
-function formatWh(wh: number): string {
-  return `${Math.round(wh).toLocaleString()} Wh`;
 }
 
 // ── Drill-down: single-window bar chart ──────────────────────────────────────
@@ -226,7 +198,28 @@ export function InverterChart({ range, start, end, selectedWindowTs, onClearWind
     [filteredSnapshots, filteredSerials],
   );
 
-  const dailyWh = useMemo(() => computeDailyWh(snapshots), [snapshots]);
+  // Aggregated view: one bar per slot showing average W across filtered inverters.
+  // Click drills into the per-inverter breakdown for that slot.
+  const aggregatedData = useMemo(() => {
+    return reshapedData.map((row) => {
+      let total = 0;
+      let onlineCount = 0;
+      for (const serial of filteredSerials) {
+        total += row[serial] ?? 0;
+        const isOnline = onlineMap.get(row.windowStart)?.get(serial) ?? true;
+        if (isOnline) onlineCount += 1;
+      }
+      const count = filteredSerials.length;
+      return {
+        windowStart: row.windowStart,
+        avgWatts: count > 0 ? total / count : 0,
+        totalWatts: total,
+        onlineCount,
+        totalCount: count,
+      };
+    });
+  }, [reshapedData, filteredSerials, onlineMap]);
+
   const xTicks = computeXTicks(range, start, end);
 
   if (selectedWindowTs !== null) {
@@ -242,13 +235,13 @@ export function InverterChart({ range, start, end, selectedWindowTs, onClearWind
   }
 
   const isLoading = data === null;
-  const isEmpty = !isLoading && reshapedData.length === 0;
+  const isEmpty = !isLoading && aggregatedData.length === 0;
 
   const handleClick: CategoricalChartFunc = (chartData) => {
     const idx = chartData?.activeIndex;
     if (idx === undefined || idx === null) return;
     const index = typeof idx === 'number' ? idx : parseInt(String(idx), 10);
-    const point = reshapedData[index];
+    const point = aggregatedData[index];
     if (point !== undefined && onWindowSelect) {
       onWindowSelect(point.windowStart);
     }
@@ -279,12 +272,11 @@ export function InverterChart({ range, start, end, selectedWindowTs, onClearWind
           <div className={styles.chartWrap}>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart
-                data={reshapedData}
+                data={aggregatedData}
                 onClick={handleClick}
                 style={{ cursor: 'pointer' }}
                 margin={{ top: 8, right: 16, left: 0, bottom: 4 }}
-                barCategoryGap="18%"
-                barGap={1}
+                barCategoryGap="10%"
               >
                 <XAxis
                   dataKey="windowStart"
@@ -317,48 +309,30 @@ export function InverterChart({ range, start, end, selectedWindowTs, onClearWind
                   labelFormatter={(v: unknown) =>
                     typeof v === 'number' ? formatFull(v) : String(v)
                   }
-                  formatter={(v: unknown, name: unknown) => [
-                    `${Number(v).toFixed(1)} W`,
-                    String(name ?? ''),
-                  ]}
+                  formatter={(_v, _name, item) => {
+                    const p = (item as { payload?: { avgWatts: number; totalWatts: number; onlineCount: number; totalCount: number } }).payload;
+                    if (!p) return ['', ''];
+                    return [
+                      `${p.avgWatts.toFixed(1)} W avg · ${Math.round(p.totalWatts).toLocaleString()} W total · ${p.onlineCount}/${p.totalCount} online`,
+                      'Output',
+                    ];
+                  }}
                 />
-                {filteredSerials.map((serial) => (
-                  <Bar
-                    key={serial}
-                    dataKey={serial}
-                    fill={colorMap.get(serial)}
-                    radius={[2, 2, 0, 0]}
-                    maxBarSize={18}
-                  >
-                    {reshapedData.map((entry, idx) => {
-                      const isOnline =
-                        onlineMap.get(entry.windowStart)?.get(serial) ?? true;
-                      return (
-                        <Cell
-                          key={idx}
-                          fill={colorMap.get(serial)}
-                          opacity={isOnline ? 1 : 0.35}
-                        />
-                      );
-                    })}
-                  </Bar>
-                ))}
+                <Bar
+                  dataKey="avgWatts"
+                  fill="#9580FF"
+                  radius={[2, 2, 0, 0]}
+                >
+                  {aggregatedData.map((entry, idx) => (
+                    <Cell
+                      key={idx}
+                      fill="#9580FF"
+                      opacity={entry.onlineCount === entry.totalCount ? 1 : 0.55}
+                    />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
-          </div>
-
-          <div className={styles.legend}>
-            {filteredSerials.map((serial) => {
-              const color = colorMap.get(serial) ?? '#fff';
-              const wh = dailyWh[serial] ?? 0;
-              return (
-                <div key={serial} className={styles.legendItem}>
-                  <span className={styles.legendSwatch} style={{ background: color }} />
-                  <span className={styles.legendSerial}>{serial}</span>
-                  <span className={styles.legendWh}>{formatWh(wh)}</span>
-                </div>
-              );
-            })}
           </div>
 
           <p className={styles.hint}>Click a bar to inspect inverters at that moment</p>

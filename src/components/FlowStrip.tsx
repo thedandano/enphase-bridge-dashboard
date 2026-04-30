@@ -120,18 +120,43 @@ export function FlowStrip() {
   const grid = gridState(gridNowSigned);
   const gridAbs = gridNowSigned !== null ? Math.abs(gridNowSigned) : undefined;
 
+  const isProducing =
+    productionNow !== undefined && productionNow > FLOW_EPSILON_WH;
+  const isImporting =
+    gridNowSigned !== null && gridNowSigned < -FLOW_EPSILON_WH;
+
+  const pipe1Active =
+    pToHWh !== null && isComplete !== undefined && Math.abs(pToHWh) > FLOW_EPSILON_WH;
+  const pipe2Active =
+    hgSegmentSigned !== null &&
+    isComplete !== undefined &&
+    Math.abs(hgSegmentSigned) > FLOW_EPSILON_WH;
+  const pipe2Color =
+    hgSegmentSigned !== null && hgSegmentSigned >= 0
+      ? 'var(--signal-grid-export)'
+      : 'var(--signal-grid-import)';
+  const sectionStyle = {
+    ...(pipe1Active && { '--rail-flow-1': 'var(--signal-production)' }),
+    ...(pipe2Active && { '--rail-flow-2': pipe2Color }),
+  } as CSSProperties;
+
   const windowRange =
     !noLatest && latest !== null
       ? `${formatTime(latest.window_start)} – ${formatTime(latest.window_start + 900)}`
       : null;
 
   return (
-    <section className={styles.section} aria-label="Energy flow summary">
+    <section
+      className={styles.section}
+      aria-label="Energy flow summary"
+      style={sectionStyle}
+    >
       {/* PRODUCTION */}
       <div className={styles.node}>
         <div className={styles.label}>
           <span
             className={styles.pulseDot}
+            data-active={isProducing ? 'true' : 'false'}
             title={windowRange ?? undefined}
             aria-hidden="true"
           />
@@ -186,7 +211,14 @@ export function FlowStrip() {
 
       {/* GRID */}
       <div className={styles.node}>
-        <div className={styles.label}>Grid</div>
+        <div className={styles.label}>
+          <span
+            className={`${styles.pulseDot} ${styles.pulseDotImport}`}
+            data-active={isImporting ? 'true' : 'false'}
+            aria-hidden="true"
+          />
+          Grid
+        </div>
         <div className={styles.now} style={{ color: grid.color }}>
           {gridNowSigned === null || isComplete === undefined ? (
             DASH

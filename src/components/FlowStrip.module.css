@@ -39,6 +39,15 @@
   animation: pulse 2.4s ease-in-out infinite;
 }
 
+.pulseDot[data-active='false'] {
+  display: none;
+}
+
+.pulseDotImport {
+  background: var(--signal-grid-import);
+  cursor: default;
+}
+
 @keyframes pulse {
   0%, 100% { opacity: 0.35; }
   50%      { opacity: 1; }
@@ -176,36 +185,117 @@
   }
 }
 
+/* ── Mobile: vertical rail layout ─────────────────────────────── */
+
 @media (max-width: 768px) {
   .section {
     grid-template-columns: 1fr;
     grid-template-rows: auto auto auto auto auto;
-    padding: 1rem 1rem;
+    padding: 1rem 1rem 1rem 2.5rem;
     gap: 0.5rem;
+    position: relative;
+  }
+
+  /* Continuous left rail with colored zones reflecting active flows.
+     Stops align with anchor positions for the fixed structure
+     [production (top), home (center), grid (bottom)]. */
+  .section::before {
+    content: '';
+    position: absolute;
+    left: 1.25rem;
+    top: 1.5rem;
+    bottom: 1.5rem;
+    width: 1px;
+    margin-left: -0.5px;
+    background: linear-gradient(
+      to bottom,
+      var(--border-subtle) 0% 1%,
+      var(--rail-flow-1, var(--border-subtle)) 1% 50%,
+      var(--rail-flow-2, var(--border-subtle)) 50% 99%,
+      var(--border-subtle) 99% 100%
+    );
+    pointer-events: none;
+  }
+
+  .node {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    column-gap: 0.75rem;
+    row-gap: 0.2rem;
+    align-items: baseline;
+  }
+
+  /* Rail anchor dot per node — punches through the rail line */
+  .node::before {
+    content: '';
+    position: absolute;
+    left: -1.25rem;
+    top: 0.4rem;
+    width: 7px;
+    height: 7px;
+    margin-left: -3.5px;
+    border-radius: 50%;
+    background: var(--fg-muted);
+    box-shadow: 0 0 0 3px var(--bg-card);
+    z-index: 2;
+  }
+
+  /* Reflow node content: row 1 = label + today, row 2 = value */
+  .label {
+    grid-row: 1;
+    grid-column: 1;
+  }
+
+  .today {
+    grid-row: 1;
+    grid-column: 2;
+    text-align: right;
+  }
+
+  /* Per-node anchor position on the rail:
+     Production = top (default), Home = center, Grid = bottom */
+  .node:nth-child(3)::before {
+    top: 50%;
+    margin-top: -3.5px;
+  }
+
+  .node:nth-child(5)::before {
+    top: auto;
+    bottom: 0.4rem;
   }
 
   .pipe {
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
+    justify-content: flex-end;
+    justify-self: stretch;
+    width: 100%;
+    height: 2.25rem;
     min-width: 0;
-    width: auto;
-    height: 60px;
-    justify-self: center;
     gap: 0.4rem;
+    padding: 0;
   }
 
+  /* Strip the segment box; dots reposition relative to .pipe */
   .pipeSegment {
-    width: 2px;
-    height: auto;
-    flex: 1;
-    border-radius: 1px;
+    display: contents;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .pipeLabel {
+    background: transparent;
+    font-size: 0.78rem;
+    margin: 0;
   }
 
   .dot {
-    left: 50%;
+    position: absolute;
+    left: -1.25rem;
+    top: 0;
     margin-left: -3px;
     margin-top: 0;
-    top: 0;
     animation-name: flow-forward-vertical;
   }
 
@@ -227,17 +317,29 @@
     100% { top: 0%;   opacity: 0; }
   }
 
-  .pipeLabel {
-    background: var(--bg-card);
-    font-size: 0.72rem;
+  .now {
+    grid-row: 2;
+    grid-column: 1 / -1;
+    font-size: 1.5rem;
   }
 
   .tickRow {
-    width: 100%;
-    max-width: 8rem;
+    display: none;
   }
 
-  .now {
-    font-size: 1.6rem;
+  /* Mobile rail is short — keep only the first traveling dot per pipe */
+  .pipeSegment:first-child .dot ~ .dot,
+  .pipeSegment:last-child .dot {
+    display: none;
+  }
+}
+
+/* Mobile + reduced motion: pin static dot to the rail (not centered in pipe) */
+@media (max-width: 768px) and (prefers-reduced-motion: reduce) {
+  .dot {
+    left: -1.25rem;
+    top: 50%;
+    margin-top: -3px;
+    margin-left: -3px;
   }
 }

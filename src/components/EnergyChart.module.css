@@ -4,6 +4,16 @@
   border-radius: var(--radius);
   padding: 1.25rem 1rem 1rem;
   border: 1px solid var(--border);
+  min-width: 0;
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 1rem 0.75rem 0.75rem;
+  }
+  .title {
+    font-size: 1.25rem;
+  }
 }
 
 .empty {

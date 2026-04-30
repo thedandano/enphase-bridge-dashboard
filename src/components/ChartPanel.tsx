@@ -64,7 +64,7 @@ export function ChartPanel() {
   return (
     <div className={styles.panel}>
       <div className={styles.controls}>
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+        <div className={styles.rangeGroup}>
           <div className={styles.todayGroup}>
             <button className={styles.navBtn} onClick={handlePrev}>←</button>
             <button

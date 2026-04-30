@@ -117,10 +117,16 @@ export function InverterDailyTotals({ start, end, periodLabel }: Props) {
     }
     const serial = li.dataset.serial;
     if (!serial) return;
+    // Flip the tooltip to the left of the cursor when it would extend
+    // past the right edge of the viewport.
+    const TOOLTIP_W = 280;
+    const PAD = 16;
+    const wouldOverflow = e.clientX + TOOLTIP_W + PAD * 2 > window.innerWidth;
+    const x = wouldOverflow ? Math.max(PAD, e.clientX - TOOLTIP_W - PAD) : e.clientX + PAD;
     setTooltip({
       serial,
-      x: e.clientX,
-      y: e.clientY,
+      x,
+      y: e.clientY + PAD,
       nowSeconds: Math.floor(Date.now() / 1000),
     });
   };

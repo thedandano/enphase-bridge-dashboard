@@ -8,6 +8,16 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 1.25rem 1rem 1rem;
+  min-width: 0;
+}
+
+@media (max-width: 480px) {
+  .section {
+    padding: 1rem 0.75rem 0.75rem;
+  }
+  .heading {
+    font-size: 1.25rem;
+  }
 }
 
 /* ── Toolbar ─────────────────────────────────────────────────────────────── */
@@ -44,7 +54,8 @@
   padding: 0.3rem 0.7rem;
   font-family: var(--font-mono);
   font-size: 0.8rem;
-  min-width: 160px;
+  min-width: 0;
+  width: clamp(120px, 50%, 200px);
   transition: border-color 0.12s, box-shadow 0.12s;
 }
 

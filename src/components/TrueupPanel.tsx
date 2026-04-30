@@ -203,25 +203,27 @@ export function TrueupPanel() {
             )}
           </div>
 
-          <table className={styles.breakdownTable}>
-            <thead>
-              <tr>
-                <th className={styles.tableHeader}>Period</th>
-                <th className={styles.tableHeader}>Import kWh</th>
-                <th className={styles.tableHeader}>Export kWh</th>
-                <th className={styles.tableHeader}>Import Cost</th>
-                <th className={styles.tableHeader}>Export Credit</th>
-              </tr>
-            </thead>
-            <tbody>
-              <BreakdownRow label="Peak" detail={estimate.breakdown.peak} />
-              <BreakdownRow label="Off-Peak" detail={estimate.breakdown.off_peak} />
-              <BreakdownRow
-                label="Super Off-Peak"
-                detail={estimate.breakdown.super_off_peak}
-              />
-            </tbody>
-          </table>
+          <div className={styles.tableScroll}>
+            <table className={styles.breakdownTable}>
+              <thead>
+                <tr>
+                  <th className={styles.tableHeader}>Period</th>
+                  <th className={styles.tableHeader}>Import kWh</th>
+                  <th className={styles.tableHeader}>Export kWh</th>
+                  <th className={styles.tableHeader}>Import Cost</th>
+                  <th className={styles.tableHeader}>Export Credit</th>
+                </tr>
+              </thead>
+              <tbody>
+                <BreakdownRow label="Peak" detail={estimate.breakdown.peak} />
+                <BreakdownRow label="Off-Peak" detail={estimate.breakdown.off_peak} />
+                <BreakdownRow
+                  label="Super Off-Peak"
+                  detail={estimate.breakdown.super_off_peak}
+                />
+              </tbody>
+            </table>
+          </div>
         </>
       )}
     </div>

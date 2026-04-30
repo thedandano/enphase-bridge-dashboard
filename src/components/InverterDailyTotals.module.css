@@ -250,6 +250,7 @@
   pointer-events: none;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
   white-space: nowrap;
+  max-width: calc(100vw - 32px);
 }
 
 .tooltipSerial {
@@ -269,4 +270,58 @@
   color: var(--text-secondary);
   font-size: 0.78rem;
   margin-top: 0.15rem;
+}
+
+/* On touch devices the row tooltip would never naturally trigger;
+   suppress to avoid stale state and any chance of off-viewport overflow. */
+@media (hover: none) {
+  .tooltip {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .section {
+    padding: 1rem 0.75rem 0.75rem;
+  }
+
+  .row {
+    grid-template-columns: minmax(0, 1fr) auto auto auto;
+    column-gap: 0.5rem;
+    padding: 0.55rem 0.125rem;
+  }
+
+  .dotTrack {
+    display: none;
+  }
+
+  .subtitle {
+    display: none;
+  }
+
+  .summary {
+    font-size: 0.75rem;
+  }
+
+  .summaryChip {
+    font-size: 0.72rem;
+  }
+
+  .heading {
+    font-size: 1.25rem;
+  }
+
+  .deviation {
+    font-size: 0.72rem;
+  }
+
+  .kwh {
+    font-size: 0.78rem;
+  }
+
+  .serial {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }

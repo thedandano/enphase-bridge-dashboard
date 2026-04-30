@@ -1,2 +1,2 @@
 npm run typecheck
-TZ=UTC npm test
+TZ=UTC npm run test:coverage

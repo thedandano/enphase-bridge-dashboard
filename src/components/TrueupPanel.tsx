@@ -77,22 +77,36 @@ function estimateReducer(state: EstimateState, action: EstimateAction): Estimate
   }
 }
 
-// --- Breakdown row ---
+// --- Period card ---
 
-interface BreakdownRowProps {
+interface PeriodCardProps {
   label: string;
   detail: PeriodDetail;
 }
 
-function BreakdownRow({ label, detail }: BreakdownRowProps) {
+function PeriodCard({ label, detail }: PeriodCardProps) {
   return (
-    <tr className={styles.breakdownRow}>
-      <td className={styles.tierLabel}>{label}</td>
-      <td className={styles.breakdownCell}>{detail.import_kwh.toFixed(2)}</td>
-      <td className={styles.breakdownCell}>{detail.export_kwh.toFixed(2)}</td>
-      <td className={styles.breakdownCell}>${formatUsd(detail.import_cost_usd)}</td>
-      <td className={styles.breakdownCell}>${formatUsd(detail.export_credit_usd)}</td>
-    </tr>
+    <div className={styles.periodCard}>
+      <div className={styles.periodName}>{label}</div>
+      <div className={styles.metricGrid}>
+        <div className={styles.metricCell}>
+          <span className={styles.metricLabel}>Import kWh</span>
+          <span className={styles.metricValue}>{detail.import_kwh.toFixed(2)}</span>
+        </div>
+        <div className={styles.metricCell}>
+          <span className={styles.metricLabel}>Export kWh</span>
+          <span className={styles.metricValue}>{detail.export_kwh.toFixed(2)}</span>
+        </div>
+        <div className={`${styles.metricCell} ${styles.metricCellCost}`}>
+          <span className={styles.metricLabel}>Import Cost</span>
+          <span className={styles.metricValue}>${formatUsd(detail.import_cost_usd)}</span>
+        </div>
+        <div className={`${styles.metricCell} ${styles.metricCellCost}`}>
+          <span className={styles.metricLabel}>Export Credit</span>
+          <span className={styles.metricValue}>${formatUsd(detail.export_credit_usd)}</span>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -203,26 +217,10 @@ export function TrueupPanel() {
             )}
           </div>
 
-          <div className={styles.tableScroll}>
-            <table className={styles.breakdownTable}>
-              <thead>
-                <tr>
-                  <th className={styles.tableHeader}>Period</th>
-                  <th className={styles.tableHeader}>Import kWh</th>
-                  <th className={styles.tableHeader}>Export kWh</th>
-                  <th className={styles.tableHeader}>Import Cost</th>
-                  <th className={styles.tableHeader}>Export Credit</th>
-                </tr>
-              </thead>
-              <tbody>
-                <BreakdownRow label="Peak" detail={estimate.breakdown.peak} />
-                <BreakdownRow label="Off-Peak" detail={estimate.breakdown.off_peak} />
-                <BreakdownRow
-                  label="Super Off-Peak"
-                  detail={estimate.breakdown.super_off_peak}
-                />
-              </tbody>
-            </table>
+          <div className={styles.periodGrid}>
+            <PeriodCard label="Peak" detail={estimate.breakdown.peak} />
+            <PeriodCard label="Off-Peak" detail={estimate.breakdown.off_peak} />
+            <PeriodCard label="Super Off-Peak" detail={estimate.breakdown.super_off_peak} />
           </div>
         </>
       )}

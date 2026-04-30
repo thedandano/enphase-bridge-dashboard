@@ -7,27 +7,68 @@
   font-size: 0.85rem;
 }
 
+.dotWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
 .statusDot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
   background: var(--fg-muted);
+  cursor: default;
 }
 
-.offline {
-  color: var(--red);
-  font-weight: 600;
-  letter-spacing: 0.05em;
+.pulse {
+  animation: statusPulse 2.4s ease-in-out infinite;
 }
 
-.uptime {
-  color: var(--fg);
+@keyframes statusPulse {
+  0%, 100% { opacity: 0.45; transform: scale(0.85); }
+  50%       { opacity: 1;    transform: scale(1.15); }
 }
 
-.countdown {
-  margin-left: auto;
-  color: var(--fg-muted);
+.dotTooltip {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  z-index: 50;
+  background: #3A3949;
+  border: 1px solid rgba(248, 248, 242, 0.12);
+  border-radius: 6px;
+  padding: 0.5rem 0.7rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
   font-family: var(--font-ui);
-  font-size: 0.8rem;
+  font-size: 0.78rem;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease-out;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
 }
+
+.dotWrap:hover .dotTooltip {
+  opacity: 1;
+}
+
+
+.tooltipRow {
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+}
+
+.statusLabel {
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+

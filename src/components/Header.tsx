@@ -7,9 +7,14 @@ import type { TokenStatus } from '@/utils/formatters';
 import styles from './Header.module.css';
 
 function tokenLabel(expiresAt: number, status: TokenStatus): string {
-  if (status === 'expired') return 'TOKEN EXPIRED';
+  if (status === 'expired') return 'Token expired';
   const daysLeft = Math.floor((expiresAt * 1000 - Date.now()) / (86400 * 1000));
-  return `Token: ${daysLeft}d`;
+  return `Token life: ${daysLeft}d`;
+}
+
+function formatLastWindow(epoch: number | null): string {
+  if (epoch === null) return 'No data yet';
+  return new Date(epoch * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
 interface Props {
@@ -32,38 +37,58 @@ export function Header({ onFirstRun }: Props) {
 
   return (
     <div className={styles.bar}>
+      <span className={styles.dotWrap}>
+        <span
+          className={`${styles.statusDot}${!isOffline && !isStale ? ` ${styles.pulse}` : ''}`}
+          style={{
+            background: isOffline
+              ? 'var(--red)'
+              : isStale
+              ? 'var(--orange)'
+              : 'var(--green)',
+          }}
+        />
+        <span className={styles.dotTooltip}>
+          {data && (
+            <>
+              <span className={styles.tooltipRow}>
+                Uptime: {formatUptime(data.uptime_seconds)}
+              </span>
+              <span
+                className={styles.tooltipRow}
+                style={{
+                  color:
+                    tokStatus === 'expired'
+                      ? 'var(--red)'
+                      : tokStatus === 'warning'
+                      ? 'var(--orange)'
+                      : undefined,
+                }}
+              >
+                {tokenLabel(data.token_expires_at, tokStatus)}
+              </span>
+              <span className={styles.tooltipRow}>
+                Data at: {formatLastWindow(data.last_window_start)}
+              </span>
+            </>
+          )}
+          <span className={styles.tooltipRow} style={{ color: 'var(--fg-muted)' }}>
+            ↻ {secondsUntilRefresh}s
+          </span>
+        </span>
+      </span>
       <span
-        className={styles.statusDot}
+        className={styles.statusLabel}
         style={{
-          background: isOffline
+          color: isOffline
             ? 'var(--red)'
             : isStale
             ? 'var(--orange)'
             : 'var(--green)',
         }}
-        title={isOffline ? 'OFFLINE' : 'ok'}
-      />
-      {isOffline ? (
-        <span className={styles.offline}>OFFLINE</span>
-      ) : (
-        <>
-          <span className={styles.uptime}>{formatUptime(data.uptime_seconds)}</span>
-          <span
-            className={styles.token}
-            style={{
-              color:
-                tokStatus === 'expired'
-                  ? 'var(--red)'
-                  : tokStatus === 'warning'
-                    ? 'var(--orange)'
-                    : 'var(--green)',
-            }}
-          >
-            {tokenLabel(data.token_expires_at, tokStatus)}
-          </span>
-        </>
-      )}
-      <span className={styles.countdown}>↻ {secondsUntilRefresh}s</span>
+      >
+        {isOffline ? 'OFFLINE' : isStale ? 'STALE' : 'ONLINE'}
+      </span>
     </div>
   );
 }

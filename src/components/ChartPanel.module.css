@@ -125,3 +125,17 @@
   color: #fff;
   border-color: var(--purple);
 }
+
+.chartRow {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+@media (orientation: landscape) {
+  :global([data-tablet="true"]) .chartRow {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+}

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTimeRange } from '@/hooks/useTimeRange';
 import type { TimeRange } from '@/api/types';
+import { useDisplayPrefs } from '@/context/DisplayPrefsContext';
 import { EnergyChart } from './EnergyChart';
 import { InverterChart } from './InverterChart';
 import { InverterDailyTotals } from './InverterDailyTotals';
@@ -33,6 +34,7 @@ function periodLabel(range: TimeRange, daysBack: number): string {
 }
 
 export function ChartPanel() {
+  const { visibleComponents } = useDisplayPrefs();
   const { range, setRange, start: trStart, end: trEnd, limit } = useTimeRange();
   const [daysBack, setDaysBack] = useState(0);
 
@@ -118,27 +120,35 @@ export function ChartPanel() {
           </button>
         </div>
       </div>
-      <EnergyChart
-        range={range}
-        start={start}
-        end={end}
-        limit={limit}
-        chartStyle={chartStyle}
-        onWindowSelect={setSelectedWindowTs}
-      />
-      <InverterChart
-        range={range}
-        start={start}
-        end={end}
-        selectedWindowTs={selectedWindowTs}
-        onClearWindow={() => setSelectedWindowTs(null)}
-        onWindowSelect={setSelectedWindowTs}
-      />
-      <InverterDailyTotals
-        start={start}
-        end={end}
-        periodLabel={periodLabel(range, daysBack)}
-      />
+      <div className={styles.chartRow}>
+        {visibleComponents.energyChart && (
+          <EnergyChart
+            range={range}
+            start={start}
+            end={end}
+            limit={limit}
+            chartStyle={chartStyle}
+            onWindowSelect={setSelectedWindowTs}
+          />
+        )}
+        {visibleComponents.inverterChart && (
+          <InverterChart
+            range={range}
+            start={start}
+            end={end}
+            selectedWindowTs={selectedWindowTs}
+            onClearWindow={() => setSelectedWindowTs(null)}
+            onWindowSelect={setSelectedWindowTs}
+          />
+        )}
+      </div>
+      {visibleComponents.inverterTotals && (
+        <InverterDailyTotals
+          start={start}
+          end={end}
+          periodLabel={periodLabel(range, daysBack)}
+        />
+      )}
     </div>
   );
 }

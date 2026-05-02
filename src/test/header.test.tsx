@@ -115,7 +115,7 @@ describe('Header', () => {
 });
 
 const ALL_VISIBLE = Object.fromEntries(
-  ['flowStrip', 'energyChart', 'inverterChart', 'inverterTotals', 'arrayHealth', 'trueup'].map(
+  ['flowStrip', 'energyChart', 'inverterTotals', 'arrayHealth', 'trueup', 'inverterHeatmap'].map(
     (k) => [k, true],
   ),
 ) as Record<VisibleKey, boolean>;

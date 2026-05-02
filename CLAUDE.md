@@ -46,9 +46,9 @@ Each component fetches its own data via `useAutoRefresh<T>(fetchFn)` from `src/h
 
 `useTimeRange` (`src/hooks/useTimeRange.ts`) manages the `today / 24h / 7d / 30d` window selector and computes `{ start, end, limit }` as Unix epoch bounds. The `'today'` range (midnight→now, limit 96) recomputes `start/end` on every render; the other ranges snapshot bounds at selection time.
 
-### Cross-component drill-down
+### Inverter diagnostics
 
-`App` holds `selectedWindowTs: number | null`. `EnergyChart` calls `onWindowSelect(window_start)` when the user clicks a bar/point. `InverterChart` receives `selectedWindowTs` and switches from showing aggregate snapshots to showing per-inverter output for that specific window. Clicking the header clears the selection.
+`InverterDailyTotals` summarizes per-inverter performance for the selected time range, comparing each inverter to the period median and leader. `InverterHeatmap` shows the detailed time pattern for the same selected range, with day-shape and seasonal views.
 
 ### EnergyChart rendering invariants
 

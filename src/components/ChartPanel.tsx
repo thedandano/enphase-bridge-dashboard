@@ -3,8 +3,8 @@ import { useTimeRange } from '@/hooks/useTimeRange';
 import type { TimeRange } from '@/api/types';
 import { useDisplayPrefs } from '@/context/DisplayPrefsContext';
 import { EnergyChart } from './EnergyChart';
-import { InverterChart } from './InverterChart';
 import { InverterDailyTotals } from './InverterDailyTotals';
+import { InverterHeatmap } from './InverterHeatmap';
 import styles from './ChartPanel.module.css';
 
 const OTHER_RANGES: TimeRange[] = ['24h', '7d', '30d'];
@@ -46,8 +46,6 @@ export function ChartPanel() {
     const v = localStorage.getItem('energyChart.style');
     return v === 'area' || v === 'bar' ? v : 'bar';
   });
-
-  const [selectedWindowTs, setSelectedWindowTs] = useState<number | null>(null);
 
   const handleSetRange = (r: TimeRange) => {
     setRange(r);
@@ -128,20 +126,12 @@ export function ChartPanel() {
             end={end}
             limit={limit}
             chartStyle={chartStyle}
-            onWindowSelect={setSelectedWindowTs}
-          />
-        )}
-        {visibleComponents.inverterChart && (
-          <InverterChart
-            range={range}
-            start={start}
-            end={end}
-            selectedWindowTs={selectedWindowTs}
-            onClearWindow={() => setSelectedWindowTs(null)}
-            onWindowSelect={setSelectedWindowTs}
           />
         )}
       </div>
+      {visibleComponents.inverterHeatmap && (
+        <InverterHeatmap range={range} start={start} end={end} />
+      )}
       {visibleComponents.inverterTotals && (
         <InverterDailyTotals
           start={start}

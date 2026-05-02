@@ -46,8 +46,8 @@ body {
 /* Semantic aliases — use these in components, not raw palette names */
 :root {
   /* Energy signals (D4) */
-  --signal-production: var(--green);
-  --signal-consumption: var(--orange);
+  --signal-production: var(--purple);
+  --signal-consumption: var(--yellow);
   --signal-grid-export: var(--cyan);
   --signal-grid-import: var(--red);
 

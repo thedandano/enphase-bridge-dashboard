@@ -66,8 +66,7 @@ describe('Smoke renders — tablet-mode additions', () => {
 describe('Smoke renders — ChartPanel visibility', () => {
   it.each([
     ['energyChart', 'ENERGY FLOW'],
-    ['inverterChart', 'INVERTER OUTPUT'],
-    ['inverterTotals', 'INVERTERS TODAY'],
+    ['inverterTotals', 'INVERTER PERFORMANCE'],
   ] as const)(
     'hides %s chart when visibility flag is false',
     (key, headingText) => {
@@ -85,8 +84,7 @@ describe('Smoke renders — ChartPanel visibility', () => {
 
   it.each([
     ['energyChart', 'ENERGY FLOW'],
-    ['inverterChart', 'INVERTER OUTPUT'],
-    ['inverterTotals', 'INVERTERS TODAY'],
+    ['inverterTotals', 'INVERTER PERFORMANCE'],
   ] as const)(
     'shows %s chart when visibility flag is true (default)',
     (key, headingText) => {

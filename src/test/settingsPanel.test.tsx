@@ -9,10 +9,10 @@ vi.mock('@/context/DisplayPrefsContext', () => ({
     visibleComponents: {
       flowStrip: true,
       energyChart: true,
-      inverterChart: true,
       inverterTotals: true,
       arrayHealth: true,
       trueup: true,
+      inverterHeatmap: true,
     },
     toggleComponent,
   }),
@@ -27,19 +27,19 @@ describe('SettingsPanel', () => {
     render(<SettingsPanel onClose={vi.fn()} />);
     expect(screen.getByLabelText('Flow Strip')).toBeInTheDocument();
     expect(screen.getByLabelText('Energy Chart')).toBeInTheDocument();
-    expect(screen.getByLabelText('Inverter Chart')).toBeInTheDocument();
-    expect(screen.getByLabelText('Inverter Totals')).toBeInTheDocument();
+    expect(screen.getByLabelText('Inverter Performance')).toBeInTheDocument();
     expect(screen.getByLabelText('Array Health')).toBeInTheDocument();
     expect(screen.getByLabelText('True-up')).toBeInTheDocument();
+    expect(screen.getByLabelText('Inverter Heatmap')).toBeInTheDocument();
   });
 
   it.each([
     ['Flow Strip', 'flowStrip'],
     ['Energy Chart', 'energyChart'],
-    ['Inverter Chart', 'inverterChart'],
-    ['Inverter Totals', 'inverterTotals'],
+    ['Inverter Performance', 'inverterTotals'],
     ['Array Health', 'arrayHealth'],
     ['True-up', 'trueup'],
+    ['Inverter Heatmap', 'inverterHeatmap'],
   ] as const)('clicking "%s" calls toggleComponent with "%s"', (label, key) => {
     render(<SettingsPanel onClose={vi.fn()} />);
     fireEvent.click(screen.getByLabelText(label));

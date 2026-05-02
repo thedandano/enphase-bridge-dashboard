@@ -11,9 +11,16 @@
 
 .header {
   display: flex;
-  align-items: baseline;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.titleGroup {
+  display: flex;
+  align-items: baseline;
+  gap: 0.625rem;
   flex-wrap: wrap;
 }
 
@@ -25,6 +32,15 @@
   letter-spacing: 0.06em;
   color: var(--fg);
   line-height: 1;
+}
+
+.periodLabel {
+  font-family: var(--font-ui);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+  text-transform: uppercase;
 }
 
 .summary {

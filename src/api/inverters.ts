@@ -11,6 +11,7 @@ export interface FetchSnapshotsParams {
   end: number;
   serial?: string;
   limit?: number;
+  offset?: number;
 }
 
 export function fetchSnapshots(params: FetchSnapshotsParams): Promise<SnapshotsResponse> {
@@ -23,6 +24,9 @@ export function fetchSnapshots(params: FetchSnapshotsParams): Promise<SnapshotsR
   }
   if (params.limit !== undefined) {
     query.set('limit', String(params.limit));
+  }
+  if (params.offset !== undefined) {
+    query.set('offset', String(params.offset));
   }
   return apiFetch<SnapshotsResponse>(`inverters/snapshots?${query.toString()}`);
 }

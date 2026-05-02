@@ -136,7 +136,10 @@ export function InverterDailyTotals({ start, end, periodLabel }: Props) {
   return (
     <section className={styles.section}>
       <div className={styles.header}>
-        <h2 className={styles.heading}>INVERTERS {periodLabel}</h2>
+        <div className={styles.titleGroup}>
+          <h2 className={styles.heading}>INVERTER PERFORMANCE</h2>
+          <span className={styles.periodLabel}>{periodLabel}</span>
+        </div>
         {!isLoading && rows.length > 0 && (
           <div className={styles.summary}>
             <span className={styles.summaryItem}>
@@ -158,7 +161,7 @@ export function InverterDailyTotals({ start, end, periodLabel }: Props) {
 
       {!isLoading && rows.length > 0 && (
         <p className={styles.subtitle}>
-          Each dot is one inverter&rsquo;s output vs. the period median.
+          Each dot compares one inverter to the selected-period median.
         </p>
       )}
 
@@ -168,7 +171,7 @@ export function InverterDailyTotals({ start, end, periodLabel }: Props) {
           Loading inverter totals…
         </div>
       ) : rows.length === 0 ? (
-        <div className={styles.stateBox}>No inverter data for today</div>
+        <div className={styles.stateBox}>No inverter performance data for this range</div>
       ) : (
         <ul
           className={styles.list}

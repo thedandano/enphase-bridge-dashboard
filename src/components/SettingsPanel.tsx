@@ -9,10 +9,10 @@ interface Props {
 const TOGGLES: { key: VisibleKey; label: string }[] = [
   { key: 'flowStrip', label: 'Flow Strip' },
   { key: 'energyChart', label: 'Energy Chart' },
-  { key: 'inverterChart', label: 'Inverter Chart' },
-  { key: 'inverterTotals', label: 'Inverter Totals' },
+  { key: 'inverterTotals', label: 'Inverter Performance' },
   { key: 'arrayHealth', label: 'Array Health' },
   { key: 'trueup', label: 'True-up' },
+  { key: 'inverterHeatmap', label: 'Inverter Heatmap' },
 ];
 
 export function SettingsPanel({ onClose }: Props) {

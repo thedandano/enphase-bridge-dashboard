@@ -17,12 +17,12 @@ interface Props {
   end: number;
   limit: number;
   chartStyle: 'area' | 'bar';
-  onWindowSelect: (windowStart: number) => void;
+  onWindowSelect?: (windowStart: number) => void;
 }
 
 const SERIES = [
-  { key: "wh_produced", label: "Production", color: "#8AFF80" },
-  { key: "wh_consumed", label: "Consumption", color: "#FFCA80" },
+  { key: "wh_produced", label: "Production", color: "var(--signal-production)" },
+  { key: "wh_consumed", label: "Consumption", color: "var(--signal-consumption)" },
   { key: "wh_grid_export", label: "Grid export", color: "#888888" },
   { key: "wh_grid_import", label: "Grid import", color: "#888888" },
 ] as const;
@@ -61,8 +61,10 @@ export function EnergyChart({ range, start, end, limit, chartStyle, onWindowSele
   const yTickFormatter = (v: number) => String(Math.abs(v));
 
   const isEmpty = data !== null && windows.length === 0;
+  const isInspectable = onWindowSelect !== undefined;
 
   const handleClick: CategoricalChartFunc = (chartData) => {
+    if (!onWindowSelect) return;
     const idx = chartData?.activeIndex;
     if (idx === undefined || idx === null) return;
     const index = typeof idx === "number" ? idx : parseInt(idx, 10);
@@ -79,7 +81,11 @@ export function EnergyChart({ range, start, end, limit, chartStyle, onWindowSele
         <div className={styles.empty}>No energy data for this range</div>
       ) : chartStyle === "area" ? (
           <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={displayData} onClick={handleClick} style={{ cursor: "pointer" }}>
+            <AreaChart
+              data={displayData}
+              onClick={isInspectable ? handleClick : undefined}
+              style={{ cursor: isInspectable ? "pointer" : "default" }}
+            >
               <XAxis
                 dataKey="window_start"
                 tickFormatter={(v: number) => formatChartTick(range, v)}
@@ -142,7 +148,12 @@ export function EnergyChart({ range, start, end, limit, chartStyle, onWindowSele
           </ResponsiveContainer>
         ) : (
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={displayData} onClick={handleClick} style={{ cursor: "pointer" }} stackOffset="sign">
+            <BarChart
+              data={displayData}
+              onClick={isInspectable ? handleClick : undefined}
+              style={{ cursor: isInspectable ? "pointer" : "default" }}
+              stackOffset="sign"
+            >
               <XAxis
                 dataKey="window_start"
                 tickFormatter={(v: number) => formatChartTick(range, v)}
@@ -175,15 +186,17 @@ export function EnergyChart({ range, start, end, limit, chartStyle, onWindowSele
                   return [`${display.toFixed(2)} Wh`, n];
                 }}
               />
-              <Bar dataKey="wh_produced"    stackId="energy" fill="#8AFF80" fillOpacity={1.0}  name="Production" />
+              <Bar dataKey="wh_produced"    stackId="energy" fill="var(--signal-production)" fillOpacity={1.0}  name="Production" />
               <Bar dataKey="wh_grid_import" stackId="energy" fill="#888888" fillOpacity={0.75} name="Grid import" />
-              <Bar dataKey="wh_consumed"    stackId="energy" fill="#FFCA80" fillOpacity={1.0}  name="Consumption" />
+              <Bar dataKey="wh_consumed"    stackId="energy" fill="var(--signal-consumption)" fillOpacity={1.0}  name="Consumption" />
               <Bar dataKey="wh_grid_export" stackId="energy" fill="#888888" fillOpacity={0.68} name="Grid export" />
             </BarChart>
           </ResponsiveContainer>
         )}
 
-      <p className={styles.hint}>Click a point to inspect inverters at that moment</p>
+      {isInspectable && (
+        <p className={styles.hint}>Click a point to inspect inverters at that moment</p>
+      )}
     </div>
   );
 }

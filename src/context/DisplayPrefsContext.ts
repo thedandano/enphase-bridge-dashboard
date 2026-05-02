@@ -3,10 +3,10 @@ import { createContext, useContext } from 'react';
 export const VISIBLE_KEYS = [
   'flowStrip',
   'energyChart',
-  'inverterChart',
   'inverterTotals',
   'arrayHealth',
   'trueup',
+  'inverterHeatmap',
 ] as const;
 
 export type VisibleKey = typeof VISIBLE_KEYS[number];

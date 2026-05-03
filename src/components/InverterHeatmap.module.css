@@ -73,6 +73,13 @@
 
 /* ── Grid rows ────────────────────────────────────────────────────────────── */
 
+.content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
 .hmRow {
   display: grid;
   grid-template-columns: 120px 1fr;
@@ -118,6 +125,47 @@
   grid-template-columns: 120px 1fr;
   align-items: center;
   gap: 8px;
+}
+
+.legendRow {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  margin-bottom: auto;
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.legendLabel {
+  color: var(--fg-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1;
+  opacity: 0.8;
+  white-space: nowrap;
+}
+
+.legendRamp {
+  width: 72px;
+  height: 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(248, 248, 242, 0.12);
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(149, 128, 255, 0.4) 25%,
+    rgba(128, 255, 234, 0.7) 55%,
+    rgba(138, 255, 128, 0.88) 80%,
+    rgba(255, 255, 128, 1) 100%
+  );
 }
 
 .axisLabels {

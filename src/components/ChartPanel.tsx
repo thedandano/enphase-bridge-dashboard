@@ -46,11 +46,7 @@ export function ChartPanel() {
   const { start, end } = range === 'today'
     ? getDayBounds(daysBack)
     : { start: trStart, end: trEnd };
-
-  const [chartStyle, setChartStyle] = useState<'area' | 'bar'>(() => {
-    const v = localStorage.getItem('energyChart.style');
-    return v === 'area' || v === 'bar' ? v : 'bar';
-  });
+  const displayEnd = range === 'today' ? start + 86400 : end;
 
   const handleSetRange = (r: TimeRange) => {
     setRange(r);
@@ -94,34 +90,6 @@ export function ChartPanel() {
             </button>
           ))}
         </div>
-        <div className={styles.styleToggle}>
-          <button
-            className={
-              chartStyle === 'area'
-                ? `${styles.styleBtn} ${styles.styleBtnActive}`
-                : styles.styleBtn
-            }
-            onClick={() => {
-              setChartStyle('area');
-              localStorage.setItem('energyChart.style', 'area');
-            }}
-          >
-            ∿ Area
-          </button>
-          <button
-            className={
-              chartStyle === 'bar'
-                ? `${styles.styleBtn} ${styles.styleBtnActive}`
-                : styles.styleBtn
-            }
-            onClick={() => {
-              setChartStyle('bar');
-              localStorage.setItem('energyChart.style', 'bar');
-            }}
-          >
-            ▐ Bars
-          </button>
-        </div>
       </div>
       {(showEnergyChart || showInverterHeatmap) && (
         <div
@@ -136,8 +104,8 @@ export function ChartPanel() {
               range={range}
               start={start}
               end={end}
+              displayEnd={displayEnd}
               limit={limit}
-              chartStyle={chartStyle}
             />
           )}
           {showInverterHeatmap && (

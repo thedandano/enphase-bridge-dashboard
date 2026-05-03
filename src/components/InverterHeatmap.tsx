@@ -139,7 +139,7 @@ function HeatmapContent({ start, end, mode }: HeatmapContentProps) {
   }
 
   return (
-    <div onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}>
+    <div className={styles.content} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}>
       {rows.map(({ serial, series, peak }) => {
         const label = serial.slice(-6);
         return (
@@ -180,6 +180,15 @@ function HeatmapContent({ start, end, mode }: HeatmapContentProps) {
               {heatmap?.axisSlots.has(i) ? label : ''}
             </span>
           ))}
+        </div>
+      </div>
+
+      <div className={styles.legendRow}>
+        <div />
+        <div className={styles.legend} aria-label="Heatmap color legend">
+          <span className={styles.legendLabel}>Low</span>
+          <span className={styles.legendRamp} aria-hidden="true" />
+          <span className={styles.legendLabel}>Peak</span>
         </div>
       </div>
 

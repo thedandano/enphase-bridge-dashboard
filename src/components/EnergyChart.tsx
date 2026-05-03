@@ -3,6 +3,7 @@ import {
   BarChart, Bar, ReferenceLine,
   XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from "recharts";
+import { useState } from "react";
 import type { CategoricalChartFunc } from "recharts/types/chart/types";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import type { TimeRange } from "@/api/types";
@@ -15,8 +16,8 @@ interface Props {
   range: TimeRange;
   start: number;
   end: number;
+  displayEnd?: number;
   limit: number;
-  chartStyle: 'area' | 'bar';
   onWindowSelect?: (windowStart: number) => void;
 }
 
@@ -32,13 +33,17 @@ const NEGATED_LABELS = new Set<string>(
 );
 
 
-export function EnergyChart({ range, start, end, limit, chartStyle, onWindowSelect }: Props) {
+export function EnergyChart({ range, start, end, displayEnd = end, limit, onWindowSelect }: Props) {
+  const [chartStyle, setChartStyle] = useState<'area' | 'bar'>(() => {
+    const v = localStorage.getItem('energyChart.style');
+    return v === 'area' || v === 'bar' ? v : 'bar';
+  });
   const { data } = useAutoRefresh<WindowsResponse>(() => fetchWindows(start, end, limit), [start]);
 
   const windows: WindowItem[] = data ? [...data.windows] : [];
   const displayData = toDisplayData(windows);
 
-  const xTicks = computeXTicks(range, start, end);
+  const xTicks = computeXTicks(range, start, displayEnd);
 
   const rawMax =
     windows.length > 0
@@ -74,7 +79,39 @@ export function EnergyChart({ range, start, end, limit, chartStyle, onWindowSele
 
   return (
     <div className={styles.container}>
-      <h2 className={styles.title}>ENERGY FLOW</h2>
+      <div className={styles.header}>
+        <h2 className={styles.title}>ENERGY FLOW</h2>
+        <div className={styles.styleToggle} aria-label="Energy chart style">
+          <button
+            type="button"
+            className={
+              chartStyle === 'area'
+                ? `${styles.styleBtn} ${styles.styleBtnActive}`
+                : styles.styleBtn
+            }
+            onClick={() => {
+              setChartStyle('area');
+              localStorage.setItem('energyChart.style', 'area');
+            }}
+          >
+            ∿ Area
+          </button>
+          <button
+            type="button"
+            className={
+              chartStyle === 'bar'
+                ? `${styles.styleBtn} ${styles.styleBtnActive}`
+                : styles.styleBtn
+            }
+            onClick={() => {
+              setChartStyle('bar');
+              localStorage.setItem('energyChart.style', 'bar');
+            }}
+          >
+            ▐ Bars
+          </button>
+        </div>
+      </div>
       <p className={styles.dateLabel}>{formatDateLabel(range, start, end)}</p>
 
       {isEmpty ? (
@@ -87,9 +124,11 @@ export function EnergyChart({ range, start, end, limit, chartStyle, onWindowSele
               style={{ cursor: isInspectable ? "pointer" : "default" }}
             >
               <XAxis
+                type="number"
                 dataKey="window_start"
                 tickFormatter={(v: number) => formatChartTick(range, v)}
                 ticks={xTicks}
+                domain={[start, displayEnd]}
                 stroke="#9281BB"
                 tick={{ fill: "#9281BB", fontSize: 11, fontFamily: CHART_FONT }}
               />
@@ -155,9 +194,11 @@ export function EnergyChart({ range, start, end, limit, chartStyle, onWindowSele
               stackOffset="sign"
             >
               <XAxis
+                type="number"
                 dataKey="window_start"
                 tickFormatter={(v: number) => formatChartTick(range, v)}
                 ticks={xTicks}
+                domain={[start, displayEnd]}
                 stroke="#9281BB"
                 tick={{ fill: "#9281BB", fontSize: 11, fontFamily: CHART_FONT }}
               />

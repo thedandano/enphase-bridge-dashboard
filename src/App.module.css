@@ -9,15 +9,6 @@
   margin-bottom: var(--gap);
 }
 
-.twoCol {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--gap);
+.panelStack {
   margin: var(--gap) 0;
-}
-
-@media (max-width: 900px) {
-  .twoCol {
-    grid-template-columns: 1fr;
-  }
 }

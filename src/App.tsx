@@ -4,7 +4,6 @@ import { Header } from '@/components/Header';
 import { FlowStrip } from '@/components/FlowStrip';
 import { ChartPanel } from '@/components/ChartPanel';
 import { ArrayHealthPanel } from '@/components/ArrayHealthPanel';
-import { TrueupPanel } from '@/components/TrueupPanel';
 import { useDisplayPrefs } from '@/context/DisplayPrefsContext';
 import styles from './App.module.css';
 
@@ -21,10 +20,9 @@ export default function App() {
       )}
       {visibleComponents.flowStrip && <FlowStrip />}
       <ChartPanel />
-      {(visibleComponents.arrayHealth || visibleComponents.trueup) && (
-        <div className={styles.twoCol}>
-          {visibleComponents.arrayHealth && <ArrayHealthPanel />}
-          {visibleComponents.trueup && <TrueupPanel />}
+      {visibleComponents.arrayHealth && (
+        <div className={styles.panelStack}>
+          <ArrayHealthPanel />
         </div>
       )}
     </Layout>

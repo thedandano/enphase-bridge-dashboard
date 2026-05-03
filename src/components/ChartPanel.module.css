@@ -126,16 +126,15 @@
   border-color: var(--purple);
 }
 
-.chartRow {
-  display: flex;
-  flex-direction: column;
+.chartPair,
+.chartSingle {
+  display: grid;
+  grid-template-columns: 1fr;
   gap: 1rem;
 }
 
-@media (orientation: landscape) {
-  :global([data-tablet="true"]) .chartRow {
-    display: grid;
+@media (min-width: 980px) {
+  .chartPair {
     grid-template-columns: 1fr 1fr;
-    gap: 1rem;
   }
 }

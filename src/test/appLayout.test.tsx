@@ -8,7 +8,7 @@ beforeEach(() => {
   vi.stubGlobal('fetch', () => new Promise(() => {}));
 });
 
-describe('App twoCol grid visibility', () => {
+describe('App dashboard panel visibility', () => {
   it('shows ArrayHealthPanel placeholder when both arrayHealth and trueup are visible (default)', () => {
     render(
       <DisplayPrefsProvider>
@@ -17,7 +17,7 @@ describe('App twoCol grid visibility', () => {
     );
     // ArrayHealthPanel renders "Loading arrays…" since fetch never resolves
     expect(screen.getByText('Loading arrays…')).toBeInTheDocument();
-    // TrueupPanel renders its heading unconditionally
+    // TrueupPanel now renders inside ChartPanel.
     expect(screen.getByRole('heading', { name: 'TOU / True-up Estimate' })).toBeInTheDocument();
   });
 
@@ -29,7 +29,7 @@ describe('App twoCol grid visibility', () => {
       </DisplayPrefsProvider>,
     );
     expect(screen.queryByText('Loading arrays…')).toBeNull();
-    // TrueupPanel still visible — twoCol wrapper still rendered
+    // TrueupPanel still visible inside ChartPanel.
     expect(screen.getByRole('heading', { name: 'TOU / True-up Estimate' })).toBeInTheDocument();
   });
 
@@ -41,7 +41,7 @@ describe('App twoCol grid visibility', () => {
       </DisplayPrefsProvider>,
     );
     expect(screen.getByText('Loading arrays…')).toBeInTheDocument();
-    // TrueupPanel heading absent — twoCol still rendered for arrayHealth
+    // TrueupPanel heading absent, ArrayHealthPanel still renders below charts.
     expect(screen.queryByRole('heading', { name: 'TOU / True-up Estimate' })).toBeNull();
   });
 

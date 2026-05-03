@@ -5,6 +5,7 @@ import { useDisplayPrefs } from '@/context/DisplayPrefsContext';
 import { EnergyChart } from './EnergyChart';
 import { InverterDailyTotals } from './InverterDailyTotals';
 import { InverterHeatmap } from './InverterHeatmap';
+import { TrueupPanel } from './TrueupPanel';
 import styles from './ChartPanel.module.css';
 
 const OTHER_RANGES: TimeRange[] = ['24h', '7d', '30d'];
@@ -37,6 +38,10 @@ export function ChartPanel() {
   const { visibleComponents } = useDisplayPrefs();
   const { range, setRange, start: trStart, end: trEnd, limit } = useTimeRange();
   const [daysBack, setDaysBack] = useState(0);
+  const showEnergyChart = visibleComponents.energyChart;
+  const showInverterHeatmap = visibleComponents.inverterHeatmap;
+  const showInverterTotals = visibleComponents.inverterTotals;
+  const showTrueup = visibleComponents.trueup;
 
   const { start, end } = range === 'today'
     ? getDayBounds(daysBack)
@@ -118,26 +123,45 @@ export function ChartPanel() {
           </button>
         </div>
       </div>
-      <div className={styles.chartRow}>
-        {visibleComponents.energyChart && (
-          <EnergyChart
-            range={range}
-            start={start}
-            end={end}
-            limit={limit}
-            chartStyle={chartStyle}
-          />
-        )}
-      </div>
-      {visibleComponents.inverterHeatmap && (
-        <InverterHeatmap range={range} start={start} end={end} />
+      {(showEnergyChart || showInverterHeatmap) && (
+        <div
+          className={
+            showEnergyChart && showInverterHeatmap
+              ? styles.chartPair
+              : styles.chartSingle
+          }
+        >
+          {showEnergyChart && (
+            <EnergyChart
+              range={range}
+              start={start}
+              end={end}
+              limit={limit}
+              chartStyle={chartStyle}
+            />
+          )}
+          {showInverterHeatmap && (
+            <InverterHeatmap range={range} start={start} end={end} />
+          )}
+        </div>
       )}
-      {visibleComponents.inverterTotals && (
-        <InverterDailyTotals
-          start={start}
-          end={end}
-          periodLabel={periodLabel(range, daysBack)}
-        />
+      {(showInverterTotals || showTrueup) && (
+        <div
+          className={
+            showInverterTotals && showTrueup
+              ? styles.chartPair
+              : styles.chartSingle
+          }
+        >
+          {showInverterTotals && (
+            <InverterDailyTotals
+              start={start}
+              end={end}
+              periodLabel={periodLabel(range, daysBack)}
+            />
+          )}
+          {showTrueup && <TrueupPanel />}
+        </div>
       )}
     </div>
   );

@@ -46,20 +46,52 @@ Each component fetches its own data via `useAutoRefresh<T>(fetchFn)` from `src/h
 
 `useTimeRange` (`src/hooks/useTimeRange.ts`) manages the `today / 24h / 7d / 30d` window selector and computes `{ start, end, limit }` as Unix epoch bounds. The `'today'` range (midnight→now, limit 96) recomputes `start/end` on every render; the other ranges snapshot bounds at selection time.
 
+`ChartPanel` owns the shared selected range plus day navigation for `today`. When viewing `today` or a previous day through the arrow controls, Energy Flow receives the real fetch `end` plus a separate `displayEnd` so it can render a full midnight-to-midnight x-axis without fetching future windows.
+
+### Dashboard layout and display preferences
+
+`App` renders `Header`, optional first-run banner, optional `FlowStrip`, `ChartPanel`, and optional `ArrayHealthPanel`.
+
+`DisplayPrefsProvider` persists tablet mode and section visibility in `localStorage`. `SettingsPanel` can toggle:
+
+- Flow Strip
+- Energy Chart
+- Inverter Performance
+- Array Health
+- True-up
+- Inverter Heatmap
+
+`ChartPanel` pairs charts when both sides are visible:
+
+- Energy Flow beside Inverter Heatmap.
+- Inverter Performance beside True-up.
+
 ### Inverter diagnostics
 
-`InverterDailyTotals` summarizes per-inverter performance for the selected time range, comparing each inverter to the period median and leader. `InverterHeatmap` shows the detailed time pattern for the same selected range, with day-shape and seasonal views.
+`InverterDailyTotals` summarizes per-inverter performance for the selected time range, comparing each inverter to the period median and leader. It highlights rows below 90% of the period leader and uses compact deviation dots with off-scale markers.
+
+`InverterHeatmap` fetches all snapshot pages for the selected range up to its cap. It has two modes:
+
+- `dayShape`: aggregates every inverter in place by local 15-minute x/y slot, producing one 96-column daily profile across the selected period.
+- `seasonal`: aggregates every inverter by local calendar day, producing a day-by-day view for seasonal or multi-day comparison.
+
+Both modes keep the same visual treatment and include a centered Low-to-Peak legend below the x-axis.
 
 ### EnergyChart rendering invariants
 
 `wh_consumed` and `wh_grid_export` are **negated** by `toDisplayData()` before being passed to Recharts, so they render below the zero axis in the mirrored stacked chart. The tooltip formatter un-negates these for display. The Y-axis domain is `[-maxWh, maxWh]` with symmetric nice-step ticks; `tickFormatter` calls `Math.abs` so no negative labels appear.
 
-The Area/Bar chart style toggle persists to `localStorage` under `energyChart.style`.
+The Area/Bar chart style toggle is local to Energy Flow and persists to `localStorage` under `energyChart.style`.
+
+Energy Flow uses theme signal colors for production and consumption. Production uses `var(--signal-production)` and consumption uses `var(--signal-consumption)`.
 
 ### Utilities (`src/utils/`)
 
 - `formatters.ts` — `toKw`, `toWh`, `formatUptime`, `tokenStatus`, `badgeColor`, `formatDateLabel`, `toDisplayData`
 - `dailySummary.ts` — `computeDailySummary(windows)` (sums energy fields across windows), `toEnergy(wh)` (formats as kWh when ≥ 1000, else whole Wh)
+- `heatmapTransform.ts` — `buildHeatmapRows` for day-shape aggregation and `buildSeasonalHeatmapRows` for day-level aggregation
+- `inverterDailyTotals.ts` — per-inverter Wh totals, median helpers, and display formatting
+- `inverterColors.ts` / `spectrumColor.ts` — shared color helpers for inverter visuals
 
 ### Styling
 
@@ -78,7 +110,17 @@ Unit tests cover pure helpers and hooks. Test files are one-to-one with the thin
 | `formatDateLabel.test.ts` | `formatDateLabel` |
 | `energyChartTransform.test.ts` | `toDisplayData` |
 | `computeDailySummary.test.ts` | `computeDailySummary`, `toEnergy` |
+| `displayPrefsContext.test.tsx` | display preference persistence helpers |
 | `useTimeRange.test.ts` | `useTimeRange` hook |
+| `useAutoRefresh.test.ts` | auto-refresh timing, retry, and visibility behavior |
+| `fetchTodayWindows.test.ts` | today-window fetch behavior |
+| `header.test.tsx` | header status and first-run behavior |
+| `settingsPanel.test.tsx` | settings toggles |
+| `appLayout.test.tsx` | dashboard layout visibility |
+| `inverterDailyTotals.test.ts` | inverter total/median helpers |
+| `inverterHeatmap.test.ts` | heatmap aggregation helpers |
+| `spectrumColor.test.ts` | heatmap color scale |
+| `trueupPanel.test.tsx` | true-up panel behavior |
 | `smoke.test.tsx` | render smoke tests (fetch stubbed to never-resolve) |
 
 Vitest runs in `jsdom` with `@testing-library/react`; setup file is `src/test/setup.ts`. Tests that depend on date formatting run under `TZ=UTC` (enforced by the pre-push hook and CI).

@@ -6,7 +6,20 @@
 
 React dashboard for the [enphase-bridge](https://github.com/thedandano/enphase-bridge) solar monitoring daemon. Displays real-time energy production, consumption, grid import/export, inverter health, and true-up cost estimates.
 
-<!-- Screenshots: add after first successful build -->
+## Current Dashboard
+
+- **Header health** shows bridge online/stale/offline state, token lifetime, data freshness, tablet/fullscreen mode, and display settings.
+- **Flow strip** gives a compact live view of production, consumption, grid import/export, and battery-style flow status.
+- **Energy Flow** shows production, consumption, grid import, and grid export over the selected time range. The Area/Bars selector lives inside this chart and persists in the browser. The `today` view keeps a full midnight-to-midnight x-axis even while the day is still in progress.
+- **Inverter Heatmap** sits beside Energy Flow. It follows the selected time range and supports:
+  - **Day shape**: aggregates snapshots by inverter and 15-minute local-time slot, so repeated days collapse into one 24-hour profile.
+  - **Seasonal**: aggregates snapshots by inverter and calendar day, so longer ranges can show panel changes over time.
+  - A centered color legend below the x-axis.
+- **Inverter Performance** sits beside True-up. It totals per-inverter output for the selected period, compares each inverter to the period median, and flags inverters below 90% of the leader.
+- **Array Health** appears when the bridge exposes named inverter arrays.
+- **True-up** shows time-of-use import/export estimates after TOU is configured in the bridge.
+
+Settings let you hide or show major dashboard sections. Preferences are stored in browser `localStorage`.
 
 ## Prerequisites
 
@@ -16,17 +29,16 @@ React dashboard for the [enphase-bridge](https://github.com/thedandano/enphase-b
 ## Quick Start
 
 ```bash
-# 1. Copy env template
-cp .env.example .env
+# 1. Optional: create a local env file
 
-# 2. Edit BRIDGE_API_URL to point to your bridge (default works on Mac/Windows with Docker)
+#    BRIDGE_API_URL default works on Mac/Windows with Docker.
 #    On Linux, set BRIDGE_API_URL=http://172.17.0.1:8080 (or your bridge host IP)
-nano .env
+printf 'BRIDGE_API_URL=http://host.docker.internal:8080\n' > .env
 
-# 3. Start the dashboard
+# 2. Start the dashboard
 docker compose up -d
 
-# 4. Open http://localhost:3000
+# 3. Open http://localhost:3000
 ```
 
 **Env var precedence:** `.env` file > `docker-compose.yml` env section > Dockerfile default
@@ -79,6 +91,24 @@ Time-of-use cost estimates require OpenEI configuration in the bridge first:
 2. Restart `enphase-bridge`.
 3. Click **Refresh TOU** in the dashboard.
 
+## Named Inverter Arrays
+
+Array Health depends on named arrays from `enphase-bridge`. Configure arrays in the bridge environment or bridge `config.toml`; the dashboard only reads the resulting `/api/inverters/arrays` response.
+
+When using bridge environment variables, the suffix after `ENPHASE__ARRAYS__` becomes the array name:
+
+```yaml
+services:
+  bridge:
+    environment:
+      ENPHASE__ARRAYS__EAST_ROOF: >-
+        ["202321152253", "202322032109"]
+      ENPHASE__ARRAYS__WEST_ROOF: >-
+        ["202322040905", "202322041414"]
+```
+
+These names are displayed as arrays by the bridge, for example `east_roof` and `west_roof`.
+
 ## Kubernetes
 
 - Replace `BRIDGE_API_URL` with the ClusterDNS service URL pointing to the bridge service.
@@ -99,6 +129,7 @@ npm run typecheck  # type-check without building
 npm run lint       # eslint
 npm run build      # production build
 npm test           # unit tests (vitest)
+npm run test:coverage # unit tests with coverage
 npm run test:watch # vitest in watch mode
 ```
 

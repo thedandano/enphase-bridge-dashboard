@@ -82,14 +82,14 @@
 
 .hmRow {
   display: grid;
-  grid-template-columns: 120px 1fr;
+  grid-template-columns: clamp(48px, 12vw, 120px) 1fr;
   align-items: center;
-  gap: 8px;
+  gap: clamp(4px, 1.5vw, 8px);
   height: 22px;
 }
 
 .hmLabel {
-  font-size: 11px;
+  font-size: clamp(10px, 2.5vw, 11px);
   color: var(--fg-muted);
   font-family: var(--font-mono);
   text-align: right;
@@ -122,16 +122,16 @@
 
 .axisRow {
   display: grid;
-  grid-template-columns: 120px 1fr;
+  grid-template-columns: clamp(48px, 12vw, 120px) 1fr;
   align-items: center;
-  gap: 8px;
+  gap: clamp(4px, 1.5vw, 8px);
 }
 
 .legendRow {
   display: grid;
-  grid-template-columns: 120px 1fr;
+  grid-template-columns: clamp(48px, 12vw, 120px) 1fr;
   align-items: center;
-  gap: 8px;
+  gap: clamp(4px, 1.5vw, 8px);
   margin-top: auto;
   margin-bottom: auto;
 }

@@ -48,16 +48,40 @@ describe('buildHeatmapRows', () => {
     expect(rows).toHaveLength(0);
   });
 
-  it('sorts multiple inverters alphabetically by serial', () => {
+  it('sorts multiple inverters by earliest non-zero production bucket', () => {
     const rows = buildHeatmapRows(
       [
         snap({ serial_number: 'C', window_start: SLOT(0) }),
-        snap({ serial_number: 'A', window_start: SLOT(0) }),
-        snap({ serial_number: 'B', window_start: SLOT(0) }),
+        snap({ serial_number: 'A', window_start: SLOT(4) }),
+        snap({ serial_number: 'B', window_start: SLOT(2) }),
       ],
       DAY_START,
     );
-    expect(rows.map((r) => r.serial)).toEqual(['A', 'B', 'C']);
+    expect(rows.map((r) => r.serial)).toEqual(['C', 'B', 'A']);
+  });
+
+  it('sorts matching first-production buckets by stronger first-bucket output before serial', () => {
+    const rows = buildHeatmapRows(
+      [
+        snap({ serial_number: 'C', window_start: SLOT(3), watts_output: 500 }),
+        snap({ serial_number: 'A', window_start: SLOT(3), watts_output: 100 }),
+        snap({ serial_number: 'B', window_start: SLOT(3), watts_output: 500 }),
+      ],
+      DAY_START,
+    );
+    expect(rows.map((r) => r.serial)).toEqual(['B', 'C', 'A']);
+  });
+
+  it('sorts zero-production inverters after producing inverters', () => {
+    const rows = buildHeatmapRows(
+      [
+        snap({ serial_number: 'A', window_start: SLOT(0), watts_output: 0 }),
+        snap({ serial_number: 'B', window_start: SLOT(10), watts_output: 20 }),
+        snap({ serial_number: 'C', window_start: SLOT(1), watts_output: 0 }),
+      ],
+      DAY_START,
+    );
+    expect(rows.map((r) => r.serial)).toEqual(['B', 'A', 'C']);
   });
 
   it('computes peak per-inverter, not globally', () => {
@@ -139,5 +163,19 @@ describe('buildSeasonalHeatmapRows', () => {
     expect(rows.rows[0].series).toEqual([300, 300]);
     expect(rows.rows[1].series).toEqual([50, 150]);
     expect(rows.peak).toBe(300);
+  });
+
+  it('sorts rows by earliest non-zero day cell and first-cell output', () => {
+    const rows = buildSeasonalHeatmapRows(
+      [
+        snap({ serial_number: 'A', window_start: SLOT(96), watts_output: 1000 }),
+        snap({ serial_number: 'B', window_start: SLOT(0), watts_output: 100 }),
+        snap({ serial_number: 'C', window_start: SLOT(0), watts_output: 400 }),
+      ],
+      DAY_START,
+      DAY_START + 2 * 86400,
+    );
+
+    expect(rows.rows.map((r) => r.serial)).toEqual(['C', 'B', 'A']);
   });
 });

@@ -21,7 +21,32 @@ function localDayStart(epochSeconds: number): number {
   return Math.floor(d.getTime() / 1000);
 }
 
-// Builds one HeatmapRow per inverter sorted alphabetically.
+function firstNonZeroSeriesIndex(series: readonly number[]): number {
+  const index = series.findIndex((value) => value > 0);
+  return index === -1 ? Number.POSITIVE_INFINITY : index;
+}
+
+function sortRowsByFirstProduction(rows: HeatmapRow[]): HeatmapRow[] {
+  return rows.sort((left, right) => {
+    const leftIndex = firstNonZeroSeriesIndex(left.series);
+    const rightIndex = firstNonZeroSeriesIndex(right.series);
+
+    if (leftIndex !== rightIndex) {
+      return leftIndex - rightIndex;
+    }
+
+    const leftFirstValue = Number.isFinite(leftIndex) ? left.series[leftIndex] : 0;
+    const rightFirstValue = Number.isFinite(rightIndex) ? right.series[rightIndex] : 0;
+
+    if (leftFirstValue !== rightFirstValue) {
+      return rightFirstValue - leftFirstValue;
+    }
+
+    return left.serial.localeCompare(right.serial);
+  });
+}
+
+// Builds one HeatmapRow per inverter sorted by first visible production.
 // start/end: Unix epoch bounds for the selected period. Values are averaged
 // into one 96-slot day shape by local time of day.
 export function buildHeatmapRows(
@@ -50,9 +75,7 @@ export function buildHeatmapRows(
     counts[slotIdx] += 1;
   }
 
-  const serials = Array.from(totalMap.keys()).sort();
-
-  return serials.map((serial) => {
+  const rows = Array.from(totalMap.keys()).map((serial) => {
     const totals = totalMap.get(serial)!;
     const counts = countMap.get(serial)!;
     const series = totals.map((total, idx) =>
@@ -61,6 +84,8 @@ export function buildHeatmapRows(
     const peak = Math.max(...series, 1);
     return { serial, series, peak };
   });
+
+  return sortRowsByFirstProduction(rows);
 }
 
 export function buildSeasonalHeatmapRows(
@@ -95,13 +120,13 @@ export function buildSeasonalHeatmapRows(
     ...Array.from(seriesMap.values()).flat(),
     1,
   );
-  const rows = Array.from(seriesMap.keys())
-    .sort()
-    .map((serial) => ({
+  const rows = sortRowsByFirstProduction(
+    Array.from(seriesMap.keys()).map((serial) => ({
       serial,
       series: seriesMap.get(serial)!,
       peak,
-    }));
+    })),
+  );
 
   return { days, rows, peak };
 }

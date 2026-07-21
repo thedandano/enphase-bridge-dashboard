@@ -76,11 +76,30 @@ export function formatChartTick(range: TimeRange, epochSeconds: number): string 
   return new Intl.DateTimeFormat(undefined, opts).format(new Date(epochSeconds * 1000));
 }
 
-/** Negate consumed and grid-export values so they render below the axis. */
+/**
+ * Prepare windows for the mirrored chart.
+ *
+ * Grid flows are netted per window. The bridge reports gross import and export,
+ * and a single 15-minute window can contain both (the house crosses break-even
+ * within it). Charting both puts a grid bar on each side of the axis for the
+ * same window — "produced 700 Wh, consumed 400 Wh, imported 20 Wh" — which reads
+ * as an error. Netting gives one grid direction per window, matching how the
+ * Enphase app reports it.
+ *
+ * Only the chart nets. True-up bills gross import and gross export at different
+ * rates, so it reads the API values directly and must not use this.
+ *
+ * Consumed and grid export are negated so they render below the axis.
+ */
 export function toDisplayData(windows: readonly WindowItem[]): WindowItem[] {
-  return windows.map((w) => ({
-    ...w,
-    wh_consumed: -w.wh_consumed,
-    wh_grid_export: -w.wh_grid_export,
-  }));
+  return windows.map((w) => {
+    const netGrid = w.wh_grid_export - w.wh_grid_import;
+    return {
+      ...w,
+      wh_consumed: -w.wh_consumed,
+      // Above the axis when net importing, below when net exporting; never both.
+      wh_grid_import: netGrid < 0 ? -netGrid : 0,
+      wh_grid_export: netGrid > 0 ? -netGrid : 0,
+    };
+  });
 }

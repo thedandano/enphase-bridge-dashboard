@@ -28,6 +28,30 @@ const SERIES = [
   { key: "wh_grid_import", label: "Grid import", color: "#888888" },
 ] as const;
 
+// Recharts' default bar cursor fills the whole category band, which reads as
+// another bar. Draw a thin centred line instead.
+const HOVER_CURSOR_WIDTH = 2;
+
+interface HoverCursorProps {
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+}
+
+function HoverCursor({ x = 0, y = 0, width = 0, height = 0 }: HoverCursorProps) {
+  return (
+    <rect
+      x={x + width / 2 - HOVER_CURSOR_WIDTH / 2}
+      y={y}
+      width={HOVER_CURSOR_WIDTH}
+      height={height}
+      fill="var(--fg-muted)"
+      fillOpacity={0.45}
+    />
+  );
+}
+
 const NEGATED_LABELS = new Set<string>(
   SERIES.filter((s) => s.key === "wh_consumed" || s.key === "wh_grid_export").map((s) => s.label)
 );
@@ -152,6 +176,10 @@ export function EnergyChart({ range, start, end, displayEnd = end, limit, onWind
                 formatter={(value: unknown, name: unknown) => {
                   const v = typeof value === "number" ? value : 0;
                   const n = String(name ?? "");
+                  // Grid flows are netted, so the unused direction is always 0.
+                  // Listing it reads as a contradiction ("exported and imported
+                  // in the same window"), so omit the empty side.
+                  if (v === 0) return null;
                   const display = NEGATED_LABELS.has(n) ? Math.abs(v) : v;
                   return [`${display.toFixed(2)} Wh`, n];
                 }}
@@ -212,6 +240,7 @@ export function EnergyChart({ range, start, end, displayEnd = end, limit, onWind
               />
               <ReferenceLine y={0} stroke="#6272a4" strokeDasharray="5 4" />
               <Tooltip
+                cursor={<HoverCursor />}
                 contentStyle={{
                   background: "#131217",
                   border: "1px solid rgba(248,248,242,0.12)",
@@ -223,6 +252,10 @@ export function EnergyChart({ range, start, end, displayEnd = end, limit, onWind
                 formatter={(value: unknown, name: unknown) => {
                   const v = typeof value === "number" ? value : 0;
                   const n = String(name ?? "");
+                  // Grid flows are netted, so the unused direction is always 0.
+                  // Listing it reads as a contradiction ("exported and imported
+                  // in the same window"), so omit the empty side.
+                  if (v === 0) return null;
                   const display = NEGATED_LABELS.has(n) ? Math.abs(v) : v;
                   return [`${display.toFixed(2)} Wh`, n];
                 }}

@@ -48,7 +48,21 @@ describe('buildHeatmapRows', () => {
     expect(rows).toHaveLength(0);
   });
 
-  it('sorts multiple inverters by earliest non-zero production bucket', () => {
+  it('sorts by peak bucket, not by first production bucket', () => {
+    // A starts producing first but peaks late; B starts later but peaks early.
+    const rows = buildHeatmapRows(
+      [
+        snap({ serial_number: 'A', window_start: SLOT(0), watts_output: 10 }),
+        snap({ serial_number: 'A', window_start: SLOT(8), watts_output: 900 }),
+        snap({ serial_number: 'B', window_start: SLOT(4), watts_output: 900 }),
+        snap({ serial_number: 'B', window_start: SLOT(8), watts_output: 10 }),
+      ],
+      DAY_START,
+    );
+    expect(rows.map((r) => r.serial)).toEqual(['B', 'A']);
+  });
+
+  it('sorts multiple inverters by earliest peak bucket', () => {
     const rows = buildHeatmapRows(
       [
         snap({ serial_number: 'C', window_start: SLOT(0) }),

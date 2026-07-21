@@ -66,7 +66,30 @@ Each component fetches its own data via `useAutoRefresh<T>(fetchFn)` from `src/h
 - Energy Flow beside Inverter Heatmap.
 - Inverter Performance beside True-up.
 
+### True-up panel
+
+`TrueupPanel` keeps its own date pickers, independent of `ChartPanel`'s range selector.
+
+The summary states the verdict in words — `CREDIT` / `OWED` / `BREAK EVEN` — with an
+**unsigned** dollar amount, so the sign of `net_cost_usd` is never shown to the user
+(negative means credit). A two-segment balance bar shows import cost vs export credit
+proportionally.
+
+`TrueupChart` renders cost above the zero axis and credit below it (credits are negated
+in `toBucketPoints`, same convention as `toDisplayData`), stacked by TOU period. Hue
+encodes direction (import/export), opacity encodes period. A cumulative-net line on a
+right-hand axis shows when the balance flips to credit.
+
+The bridge has **no true-up time-series endpoint**, so `fetchTrueupSeries` issues one
+`trueup/estimate` call per bucket. `chooseBucketSize` steps day → week → month with range
+length, capped at `MAX_BUCKETS` (16) calls, fetched in batches of 4. Any bucket failing
+rejects the whole series — the chart never renders with silent gaps. This runs only on
+explicit Fetch / date change, never on the 30 s auto-refresh loop.
+
 ### Inverter diagnostics
+
+Heatmap rows are sorted by **time of peak production** (earliest peak first), tie-broken by
+peak magnitude then serial; all-zero inverters sort last.
 
 `InverterDailyTotals` summarizes per-inverter performance for the selected time range, comparing each inverter to the period median and leader. It highlights rows below 90% of the period leader and uses compact deviation dots with off-scale markers.
 
@@ -91,6 +114,7 @@ Energy Flow uses theme signal colors for production and consumption. Production 
 - `dailySummary.ts` — `computeDailySummary(windows)` (sums energy fields across windows), `toEnergy(wh)` (formats as kWh when ≥ 1000, else whole Wh)
 - `heatmapTransform.ts` — `buildHeatmapRows` for day-shape aggregation and `buildSeasonalHeatmapRows` for day-level aggregation
 - `inverterDailyTotals.ts` — per-inverter Wh totals, median helpers, and display formatting
+- `trueupBuckets.ts` — `chooseBucketSize` / `buildBuckets` / `toBucketPoints` for the true-up time series
 - `inverterColors.ts` / `spectrumColor.ts` — shared color helpers for inverter visuals
 
 ### Styling
@@ -121,6 +145,7 @@ Unit tests cover pure helpers and hooks. Test files are one-to-one with the thin
 | `inverterHeatmap.test.ts` | heatmap aggregation helpers |
 | `spectrumColor.test.ts` | heatmap color scale |
 | `trueupPanel.test.tsx` | true-up panel behavior |
+| `trueupBuckets.test.ts` | true-up bucketing and series accumulation |
 | `smoke.test.tsx` | render smoke tests (fetch stubbed to never-resolve) |
 
 Vitest runs in `jsdom` with `@testing-library/react`; setup file is `src/test/setup.ts`. Tests that depend on date formatting run under `TZ=UTC` (enforced by the pre-push hook and CI).

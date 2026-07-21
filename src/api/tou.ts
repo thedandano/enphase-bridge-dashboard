@@ -3,6 +3,7 @@ import type { EstimateResponse, TouRefreshResponse } from './types';
 import { epochToRfc3339 } from './time';
 import {
   buildBuckets,
+  bucketsAreTruncated,
   chooseBucketSize,
   toBucketPoints,
   type TrueupBucketPoint,
@@ -31,10 +32,16 @@ export function fetchTrueupEstimate(start: number, end: number): Promise<Estimat
 // call count at MAX_BUCKETS; batches keep concurrent load on the daemon low.
 const FETCH_BATCH_SIZE = 4;
 
+export interface TrueupSeries {
+  points: TrueupBucketPoint[];
+  /** Set when MAX_BUCKETS cut the range short; the epoch the chart stops at. */
+  truncatedAt: number | null;
+}
+
 export async function fetchTrueupSeries(
   start: number,
   end: number,
-): Promise<TrueupBucketPoint[]> {
+): Promise<TrueupSeries> {
   const buckets = buildBuckets(start, end, chooseBucketSize(start, end));
   const estimates: EstimateResponse[] = [];
 
@@ -47,5 +54,17 @@ export async function fetchTrueupSeries(
     estimates.push(...results);
   }
 
-  return toBucketPoints(buckets, estimates);
+  const truncated = bucketsAreTruncated(buckets, end);
+  if (truncated) {
+    console.warn(
+      `[trueup] range exceeds MAX_BUCKETS; chart covers through ` +
+        `${new Date(buckets[buckets.length - 1].end * 1000).toISOString()} ` +
+        `of a range ending ${new Date(end * 1000).toISOString()}`,
+    );
+  }
+
+  return {
+    points: toBucketPoints(buckets, estimates),
+    truncatedAt: truncated ? buckets[buckets.length - 1].end : null,
+  };
 }

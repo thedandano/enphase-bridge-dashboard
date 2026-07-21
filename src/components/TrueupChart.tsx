@@ -28,8 +28,16 @@ function formatBucketLabel(epoch: number): string {
   });
 }
 
-function formatDollarTick(value: number): string {
+// The cost/credit axis is mirrored, so its labels carry magnitude only —
+// direction is encoded by which side of zero the bar sits on.
+function formatMagnitudeTick(value: number): string {
   return `$${Math.abs(value).toFixed(0)}`;
+}
+
+// The cumulative axis is signed: negative means credit. Stripping the sign here
+// would make being $50 ahead look identical to owing $50.
+function formatSignedTick(value: number): string {
+  return value < 0 ? `-$${Math.abs(value).toFixed(0)}` : `$${value.toFixed(0)}`;
 }
 
 // Symmetric ticks on a nice step, so zero is always a labelled gridline rather
@@ -56,9 +64,11 @@ function tooltipLabelFormatter(label: unknown): string {
 
 interface TrueupChartProps {
   points: readonly TrueupBucketPoint[];
+  /** Epoch the series stops at when the range exceeded the bucket cap. */
+  truncatedAt?: number | null;
 }
 
-export function TrueupChart({ points }: TrueupChartProps) {
+export function TrueupChart({ points, truncatedAt = null }: TrueupChartProps) {
   if (points.length === 0) return null;
 
   const maxMagnitude = Math.max(
@@ -69,6 +79,13 @@ export function TrueupChart({ points }: TrueupChartProps) {
     1,
   );
   const { domain, ticks } = niceSymmetricTicks(maxMagnitude);
+
+  const cumulativeMagnitude = Math.max(
+    ...points.map((p) => Math.abs(p.cumulative_net)),
+    1,
+  );
+  const { domain: cumulativeDomain, ticks: cumulativeTicks } =
+    niceSymmetricTicks(cumulativeMagnitude);
 
   return (
     <div className={styles.chartBlock}>
@@ -89,14 +106,19 @@ export function TrueupChart({ points }: TrueupChartProps) {
             yAxisId="dollars"
             domain={domain}
             ticks={ticks}
-            tickFormatter={formatDollarTick}
+            tickFormatter={formatMagnitudeTick}
             tick={{ fill: 'var(--fg-muted)', fontSize: 11, fontFamily: CHART_FONT }}
             stroke="var(--border)"
           />
+          {/* Symmetric like the dollars axis so both share a zero line — the
+              caption promises the net line crossing below zero means credit,
+              which only reads true if the two zeros coincide. */}
           <YAxis
             yAxisId="cumulative"
             orientation="right"
-            tickFormatter={formatDollarTick}
+            domain={cumulativeDomain}
+            ticks={cumulativeTicks}
+            tickFormatter={formatSignedTick}
             tick={{ fill: 'var(--purple)', fontSize: 11, fontFamily: CHART_FONT }}
             stroke="var(--border)"
           />
@@ -137,6 +159,13 @@ export function TrueupChart({ points }: TrueupChartProps) {
           />
         </ComposedChart>
       </ResponsiveContainer>
+      {truncatedAt !== null && (
+        <p className={styles.chartWarning} role="status">
+          Range too long to chart in full — showing through{' '}
+          {new Date(truncatedAt * 1000).toLocaleDateString()}. The totals above
+          still cover the whole period.
+        </p>
+      )}
       <p className={styles.chartHint}>
         Bars: cost above the line, credit below. Line: running net — below zero means
         you're ahead.

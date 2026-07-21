@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import * as clientModule from '@/api/client';
 import { ApiError } from '@/api/client';
 import { TrueupPanel } from '@/components/TrueupPanel';
@@ -116,6 +116,29 @@ describe('TrueupPanel', () => {
     await waitFor(() =>
       expect(screen.getByText('TOU-DR-2 Inland Baseline Region')).toBeInTheDocument(),
     );
+  });
+
+  // The API layer shifts `end` back a day for the bridge's inclusive-end
+  // semantics, so an empty or backwards range would be sent end-before-start.
+  it('rejects an end date that is not after the start date', async () => {
+    const spy = vi.spyOn(clientModule, 'apiFetch').mockResolvedValue(makeEstimate());
+    render(<TrueupPanel />);
+
+    const start = screen.getByLabelText(/start/i) as HTMLInputElement;
+    const end = screen.getByLabelText(/end/i) as HTMLInputElement;
+    fireEvent.change(start, { target: { value: '2026-07-21' } });
+    fireEvent.change(end, { target: { value: '2026-07-21' } });
+
+    await waitFor(() => {
+      expect(screen.getByText(/End date must be after start date/)).toBeInTheDocument();
+    });
+    // No request should go out for an invalid range.
+    spy.mockClear();
+    fireEvent.click(screen.getByRole('button', { name: /fetch/i }));
+    await waitFor(() => {
+      expect(screen.getByText(/End date must be after start date/)).toBeInTheDocument();
+    });
+    expect(spy).not.toHaveBeenCalled();
   });
 
   it('renders no_tou_schedule error with warning style', async () => {

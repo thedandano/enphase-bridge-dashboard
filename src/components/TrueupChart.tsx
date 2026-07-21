@@ -162,8 +162,9 @@ export function TrueupChart({ points, truncatedAt = null }: TrueupChartProps) {
       {truncatedAt !== null && (
         <p className={styles.chartWarning} role="status">
           Range too long to chart in full — showing through{' '}
-          {new Date(truncatedAt * 1000).toLocaleDateString()}. The totals above
-          still cover the whole period.
+          {/* truncatedAt is an exclusive end; the last charted day is the one before it. */}
+          {new Date((truncatedAt - 86400) * 1000).toLocaleDateString()}. The totals
+          above still cover the whole period.
         </p>
       )}
       <p className={styles.chartHint}>

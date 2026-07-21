@@ -142,3 +142,37 @@ describe('toBucketPoints input validation', () => {
     expect(() => toBucketPoints(buckets, [estimate(1)])).toThrow(/mismatch/);
   });
 });
+
+describe('bucket alignment', () => {
+  // Bucket ends feed an API that rounds to whole days, so a boundary that
+  // drifts off midnight silently shifts a day between buckets. Stepping by
+  // fixed 86400 seconds drifts across DST; stepping by calendar days does not.
+  //
+  // CI runs under TZ=UTC, which has no DST, so this assertion is weak there.
+  // It has teeth when the suite runs in a DST-observing zone.
+  it.each(['day', 'week', 'month'] as const)(
+    'starts every %s bucket at local midnight',
+    (size) => {
+      const start = Math.floor(new Date('2026-03-01T00:00:00').getTime() / 1000);
+      const buckets = buildBuckets(start, start + 120 * DAY, size);
+      expect(buckets.length).toBeGreaterThan(1);
+      for (const b of buckets) {
+        const d = new Date(b.start * 1000);
+        expect([d.getHours(), d.getMinutes(), d.getSeconds()]).toEqual([0, 0, 0]);
+      }
+    },
+  );
+
+  it('advances day buckets by exactly one calendar day', () => {
+    const start = Math.floor(new Date('2026-03-01T00:00:00').getTime() / 1000);
+    const buckets = buildBuckets(start, start + 10 * DAY, 'day');
+    for (let i = 1; i < buckets.length; i++) {
+      const prev = new Date(buckets[i - 1].start * 1000);
+      const cur = new Date(buckets[i].start * 1000);
+      const expected = new Date(prev);
+      expected.setDate(expected.getDate() + 1);
+      expect(cur.getDate()).toBe(expected.getDate());
+      expect(cur.getMonth()).toBe(expected.getMonth());
+    }
+  });
+});

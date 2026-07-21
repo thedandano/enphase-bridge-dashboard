@@ -5,6 +5,7 @@ import { ApiError } from '@/api/client';
 import type { WindowItem, WindowsResponse } from '@/api/types';
 import { computeDailySummary, toEnergy } from '@/utils/dailySummary';
 import { toKw, toWh } from '@/utils/formatters';
+import { solarToHomeWh } from '@/utils/energyFlow';
 import styles from './FlowStrip.module.css';
 
 const DASH = '—';
@@ -113,7 +114,7 @@ export function FlowStrip() {
   // Segment magnitudes for the pipes.
   const pToHWh =
     !noLatest && latest !== null
-      ? Math.min(latest.wh_produced, latest.wh_consumed)
+      ? solarToHomeWh(latest.wh_consumed, latest.wh_grid_import)
       : null;
   const hgSegmentSigned = gridNowSigned;
 

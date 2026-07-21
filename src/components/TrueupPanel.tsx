@@ -1,7 +1,9 @@
 import { useState, useEffect, useLayoutEffect, useRef, useCallback, useReducer } from 'react';
-import { fetchTrueupEstimate } from '@/api/tou';
+import { fetchTrueupEstimate, fetchTrueupSeries } from '@/api/tou';
 import { ApiError } from '@/api/client';
 import type { EstimateResponse, PeriodDetail } from '@/api/types';
+import type { TrueupBucketPoint } from '@/utils/trueupBuckets';
+import { TrueupChart } from './TrueupChart';
 import styles from './TrueupPanel.module.css';
 
 function dateInputToEpoch(value: string): number {
@@ -58,12 +60,13 @@ function formatUsd(amount: number): string {
 interface EstimateState {
   isLoading: boolean;
   estimate: EstimateResponse | null;
+  series: TrueupBucketPoint[];
   estimateError: ErrorInfo | null;
 }
 
 type EstimateAction =
   | { type: 'fetch_start' }
-  | { type: 'fetch_success'; estimate: EstimateResponse }
+  | { type: 'fetch_success'; estimate: EstimateResponse; series: TrueupBucketPoint[] }
   | { type: 'fetch_error'; error: ErrorInfo };
 
 function estimateReducer(state: EstimateState, action: EstimateAction): EstimateState {
@@ -71,10 +74,86 @@ function estimateReducer(state: EstimateState, action: EstimateAction): Estimate
     case 'fetch_start':
       return { ...state, isLoading: true, estimateError: null };
     case 'fetch_success':
-      return { isLoading: false, estimate: action.estimate, estimateError: null };
+      return {
+        isLoading: false,
+        estimate: action.estimate,
+        series: action.series,
+        estimateError: null,
+      };
     case 'fetch_error':
-      return { isLoading: false, estimate: null, estimateError: action.error };
+      return { isLoading: false, estimate: null, series: [], estimateError: action.error };
   }
+}
+
+// --- Verdict block ---
+
+// net_cost_usd is positive when the user owes, negative when they're in credit.
+// The panel never shows that sign — it states the verdict in words instead.
+function sumBreakdown(
+  breakdown: EstimateResponse['breakdown'],
+  field: 'import_cost_usd' | 'export_credit_usd',
+): number {
+  return (
+    breakdown.peak[field] + breakdown.off_peak[field] + breakdown.super_off_peak[field]
+  );
+}
+
+interface VerdictBlockProps {
+  estimate: EstimateResponse;
+  rateLabel?: string;
+}
+
+function VerdictBlock({ estimate, rateLabel }: VerdictBlockProps) {
+  const net = estimate.net_cost_usd;
+  const totalCost = sumBreakdown(estimate.breakdown, 'import_cost_usd');
+  const totalCredit = sumBreakdown(estimate.breakdown, 'export_credit_usd');
+
+  const verdict = net === 0 ? 'BREAK EVEN' : net < 0 ? 'CREDIT' : 'OWED';
+  const verdictColor =
+    net === 0 ? 'var(--fg)' : net < 0 ? 'var(--green)' : 'var(--red)';
+
+  // Bar segments are proportional to dollars; the longer segment is the verdict.
+  const barTotal = totalCost + totalCredit;
+  const costPct = barTotal > 0 ? (totalCost / barTotal) * 100 : 50;
+
+  return (
+    <div className={styles.verdictBlock}>
+      <span
+        className={styles.verdictLabel}
+        style={{ color: verdictColor }}
+        data-testid="trueup-verdict"
+      >
+        {verdict}
+      </span>
+      <span
+        className={styles.verdictValue}
+        style={{ color: verdictColor }}
+        data-testid="trueup-verdict-amount"
+      >
+        ${Math.abs(net).toFixed(2)}
+      </span>
+      <span className={styles.verdictSubline}>
+        exports earned ${formatUsd(totalCredit)} · imports cost ${formatUsd(totalCost)}
+      </span>
+
+      <div
+        className={styles.balanceBar}
+        role="img"
+        aria-label={`Imports cost $${formatUsd(totalCost)}, exports earned $${formatUsd(totalCredit)}`}
+      >
+        <div
+          className={styles.balanceCost}
+          style={{ width: `${costPct}%` }}
+        />
+        <div
+          className={styles.balanceCredit}
+          style={{ width: `${100 - costPct}%` }}
+        />
+      </div>
+
+      {rateLabel && <span className={styles.scheduleLabel}>{rateLabel}</span>}
+    </div>
+  );
 }
 
 // --- Period card ---
@@ -85,6 +164,12 @@ interface PeriodCardProps {
 }
 
 function PeriodCard({ label, detail }: PeriodCardProps) {
+  // Same sign convention as the headline: positive means this period cost more
+  // than it earned. The card shows the word, never the sign.
+  const net = detail.import_cost_usd - detail.export_credit_usd;
+  const netVerdict = net === 0 ? 'EVEN' : net < 0 ? 'CREDIT' : 'OWED';
+  const netColor = net === 0 ? 'var(--fg)' : net < 0 ? 'var(--green)' : 'var(--red)';
+
   return (
     <div className={styles.periodCard}>
       <div className={styles.periodName}>{label}</div>
@@ -106,6 +191,14 @@ function PeriodCard({ label, detail }: PeriodCardProps) {
           <span className={styles.metricValue}>${formatUsd(detail.export_credit_usd)}</span>
         </div>
       </div>
+
+      <div className={styles.periodNet}>
+        <span className={styles.metricLabel}>Net</span>
+        <span className={styles.periodNetValue} style={{ color: netColor }}>
+          ${formatUsd(Math.abs(net))}
+          <span className={styles.periodNetVerdict}>{netVerdict}</span>
+        </span>
+      </div>
     </div>
   );
 }
@@ -119,6 +212,7 @@ export function TrueupPanel() {
   const [estimateState, dispatchEstimate] = useReducer(estimateReducer, {
     isLoading: false,
     estimate: null,
+    series: [],
     estimateError: null,
   });
 
@@ -136,8 +230,13 @@ export function TrueupPanel() {
     const start = dateInputToEpoch(startDateRef.current);
     const end = dateInputToEpoch(endDateRef.current);
     try {
-      const result = await fetchTrueupEstimate(start, end);
-      dispatchEstimate({ type: 'fetch_success', estimate: result });
+      // Summary and series are fetched together so the panel never renders a
+      // verdict that disagrees with the chart below it.
+      const [result, series] = await Promise.all([
+        fetchTrueupEstimate(start, end),
+        fetchTrueupSeries(start, end),
+      ]);
+      dispatchEstimate({ type: 'fetch_success', estimate: result, series });
     } catch (err) {
       dispatchEstimate({ type: 'fetch_error', error: getErrorMessage(err) });
     }
@@ -151,10 +250,7 @@ export function TrueupPanel() {
     // including it alongside stable doFetch is intentional to re-run on date changes.
   }, [doFetch, fetchTrigger]);
 
-  const { isLoading, estimate, estimateError } = estimateState;
-
-  const netCostColor =
-    estimate && estimate.net_cost_usd < 0 ? 'var(--green)' : 'var(--red)';
+  const { isLoading, estimate, series, estimateError } = estimateState;
 
   return (
     <div className={styles.panel}>
@@ -204,24 +300,18 @@ export function TrueupPanel() {
 
       {!isLoading && estimate && (
         <>
-          <div className={styles.netCostBlock}>
-            <span className={styles.netCostLabel}>Net Cost</span>
-            <span className={styles.netCostValue} style={{ color: netCostColor }}>
-              {estimate.net_cost_usd < 0 ? '-' : ''}$
-              {Math.abs(estimate.net_cost_usd).toFixed(2)}
-            </span>
-            {estimate.tou_schedule && (
-              <span className={styles.scheduleLabel}>
-                {estimate.tou_schedule.rate_label}
-              </span>
-            )}
-          </div>
+          <VerdictBlock
+            estimate={estimate}
+            rateLabel={estimate.tou_schedule?.rate_label}
+          />
 
           <div className={styles.periodGrid}>
             <PeriodCard label="Peak" detail={estimate.breakdown.peak} />
             <PeriodCard label="Off-Peak" detail={estimate.breakdown.off_peak} />
             <PeriodCard label="Super Off-Peak" detail={estimate.breakdown.super_off_peak} />
           </div>
+
+          <TrueupChart points={series} />
         </>
       )}
     </div>

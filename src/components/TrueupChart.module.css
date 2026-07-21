@@ -1,0 +1,24 @@
+.chartBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: var(--gap);
+  border-top: 1px solid var(--border);
+  padding-top: var(--gap);
+}
+
+.chartTitle {
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--fg-muted);
+  margin: 0;
+}
+
+.chartHint {
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  color: var(--fg-muted);
+  margin: 0;
+}

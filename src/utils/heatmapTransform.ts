@@ -21,32 +21,40 @@ function localDayStart(epochSeconds: number): number {
   return Math.floor(d.getTime() / 1000);
 }
 
-function firstNonZeroSeriesIndex(series: readonly number[]): number {
-  const index = series.findIndex((value) => value > 0);
-  return index === -1 ? Number.POSITIVE_INFINITY : index;
+// Index of the row's highest value. All-zero rows sort last.
+function peakSeriesIndex(series: readonly number[]): number {
+  let peakIndex = -1;
+  let peakValue = 0;
+  series.forEach((value, index) => {
+    if (value > peakValue) {
+      peakValue = value;
+      peakIndex = index;
+    }
+  });
+  return peakIndex === -1 ? Number.POSITIVE_INFINITY : peakIndex;
 }
 
-function sortRowsByFirstProduction(rows: HeatmapRow[]): HeatmapRow[] {
+function sortRowsByPeakTime(rows: HeatmapRow[]): HeatmapRow[] {
   return rows.sort((left, right) => {
-    const leftIndex = firstNonZeroSeriesIndex(left.series);
-    const rightIndex = firstNonZeroSeriesIndex(right.series);
+    const leftIndex = peakSeriesIndex(left.series);
+    const rightIndex = peakSeriesIndex(right.series);
 
     if (leftIndex !== rightIndex) {
       return leftIndex - rightIndex;
     }
 
-    const leftFirstValue = Number.isFinite(leftIndex) ? left.series[leftIndex] : 0;
-    const rightFirstValue = Number.isFinite(rightIndex) ? right.series[rightIndex] : 0;
+    const leftPeak = Number.isFinite(leftIndex) ? left.series[leftIndex] : 0;
+    const rightPeak = Number.isFinite(rightIndex) ? right.series[rightIndex] : 0;
 
-    if (leftFirstValue !== rightFirstValue) {
-      return rightFirstValue - leftFirstValue;
+    if (leftPeak !== rightPeak) {
+      return rightPeak - leftPeak;
     }
 
     return left.serial.localeCompare(right.serial);
   });
 }
 
-// Builds one HeatmapRow per inverter sorted by first visible production.
+// Builds one HeatmapRow per inverter sorted by time of peak production.
 // start/end: Unix epoch bounds for the selected period. Values are averaged
 // into one 96-slot day shape by local time of day.
 export function buildHeatmapRows(
@@ -85,7 +93,7 @@ export function buildHeatmapRows(
     return { serial, series, peak };
   });
 
-  return sortRowsByFirstProduction(rows);
+  return sortRowsByPeakTime(rows);
 }
 
 export function buildSeasonalHeatmapRows(
@@ -120,7 +128,7 @@ export function buildSeasonalHeatmapRows(
     ...Array.from(seriesMap.values()).flat(),
     1,
   );
-  const rows = sortRowsByFirstProduction(
+  const rows = sortRowsByPeakTime(
     Array.from(seriesMap.keys()).map((serial) => ({
       serial,
       series: seriesMap.get(serial)!,

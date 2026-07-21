@@ -47,26 +47,57 @@ describe('TrueupPanel', () => {
     });
   });
 
-  it('renders the net cost value', async () => {
+  it('reads OWED with an unsigned amount when net cost is positive', async () => {
     vi.spyOn(clientModule, 'apiFetch').mockResolvedValue(makeEstimate({ net_cost_usd: 2.43 }));
     render(<TrueupPanel />);
-    // The span renders '$' and '2.43' as adjacent text nodes; match on combined textContent
     await waitFor(() => {
-      const span = screen.getAllByText(/2\.43/).find(
-        el => el.tagName === 'SPAN' && el.textContent?.includes('$'),
-      );
-      expect(span).toBeInTheDocument();
+      expect(screen.getByTestId('trueup-verdict')).toHaveTextContent('OWED');
     });
+    // The amount is never signed — the verdict word carries the direction.
+    expect(screen.getByTestId('trueup-verdict-amount')).toHaveTextContent('$2.43');
   });
 
-  it('renders negative net cost with green color', async () => {
+  it('reads CREDIT in green when net cost is negative', async () => {
     vi.spyOn(clientModule, 'apiFetch').mockResolvedValue(makeEstimate({ net_cost_usd: -5.0 }));
     render(<TrueupPanel />);
     await waitFor(() => {
-      const span = screen.getAllByText(/5\.00/).find(
-        el => el.tagName === 'SPAN' && el.textContent?.includes('$'),
-      );
-      expect(span).toHaveStyle({ color: 'var(--green)' });
+      expect(screen.getByTestId('trueup-verdict')).toHaveTextContent('CREDIT');
+    });
+    expect(screen.getByTestId('trueup-verdict')).toHaveStyle({ color: 'var(--green)' });
+    // Negative net must not leak a minus sign into the displayed amount.
+    expect(screen.getByTestId('trueup-verdict-amount')).toHaveTextContent('$5.00');
+  });
+
+  it('shows per-period net with a verdict, unsigned', async () => {
+    vi.spyOn(clientModule, 'apiFetch').mockResolvedValue(
+      makeEstimate({
+        breakdown: {
+          // costs more than it earns -> OWED 10.00
+          peak: { import_kwh: 1, export_kwh: 1, import_cost_usd: 12, export_credit_usd: 2 },
+          // earns more than it costs -> CREDIT 5.00
+          off_peak: { import_kwh: 1, export_kwh: 1, import_cost_usd: 3, export_credit_usd: 8 },
+          super_off_peak: {
+            import_kwh: 1, export_kwh: 1, import_cost_usd: 4, export_credit_usd: 4,
+          },
+        },
+      }),
+    );
+    render(<TrueupPanel />);
+    await waitFor(() => {
+      expect(screen.getByText('Super Off-Peak')).toBeInTheDocument();
+    });
+    // Amounts are unsigned; the adjacent word carries direction.
+    expect(screen.getByText('10.00', { exact: false })).toBeInTheDocument();
+    expect(screen.getAllByText('OWED').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('CREDIT').length).toBeGreaterThan(0);
+    expect(screen.getByText('EVEN')).toBeInTheDocument();
+  });
+
+  it('reads BREAK EVEN when net cost is exactly zero', async () => {
+    vi.spyOn(clientModule, 'apiFetch').mockResolvedValue(makeEstimate({ net_cost_usd: 0 }));
+    render(<TrueupPanel />);
+    await waitFor(() => {
+      expect(screen.getByTestId('trueup-verdict')).toHaveTextContent('BREAK EVEN');
     });
   });
 

@@ -111,27 +111,54 @@
 }
 
 /* Net cost */
-.netCostBlock {
+.verdictBlock {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 0.125rem;
 }
 
-.netCostLabel {
+.verdictLabel {
   font-family: var(--font-ui);
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--fg-muted);
 }
 
-.netCostValue {
+.verdictValue {
   font-family: var(--font-display);
   font-size: 3rem;
   line-height: 1;
   letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.verdictSubline {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--fg-muted);
+  margin-top: 0.25rem;
+}
+
+/* Two segments meeting at a shared origin — the longer one is the verdict. */
+.balanceBar {
+  display: flex;
+  width: 100%;
+  max-width: 24rem;
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 0.5rem;
+  background: var(--bg);
+}
+
+.balanceCost {
+  background: var(--signal-grid-import);
+}
+
+.balanceCredit {
+  background: var(--signal-grid-export);
 }
 
 .scheduleLabel {
@@ -206,3 +233,29 @@
   font-variant-numeric: tabular-nums;
 }
 
+
+.periodNet {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.periodNetValue {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.375rem;
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.periodNetVerdict {
+  font-family: var(--font-ui);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}

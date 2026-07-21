@@ -31,6 +31,18 @@ function localDayStart(epochSeconds: number): number {
   return Math.floor(d.getTime() / 1000);
 }
 
+// Step by calendar days, not by a fixed 86400. A local day is 23 or 25 hours
+// across a DST transition, so fixed-second stepping drifts off midnight — and
+// after a fall-back it lands on the *previous* day (Sat 23:00 rather than
+// Sun 00:00). Bucket ends feed an API that rounds to whole days, so that drift
+// silently shifts a day between buckets.
+function addDays(epochSeconds: number, days: number): number {
+  const d = new Date(epochSeconds * 1000);
+  d.setDate(d.getDate() + days);
+  d.setHours(0, 0, 0, 0);
+  return Math.floor(d.getTime() / 1000);
+}
+
 // Date.setMonth overflows on month-end dates — Jan 31 + 1 month lands on Mar 3,
 // skipping February entirely. Pin to day 1 first, then clamp back to the
 // shorter month's last day.
@@ -41,6 +53,7 @@ function addMonth(epochSeconds: number): number {
   d.setMonth(d.getMonth() + 1);
   const daysInTargetMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
   d.setDate(Math.min(dayOfMonth, daysInTargetMonth));
+  d.setHours(0, 0, 0, 0);
   return Math.floor(d.getTime() / 1000);
 }
 
@@ -58,7 +71,7 @@ export function buildBuckets(start: number, end: number, size: BucketSize): Buck
 
   while (cursor < end && buckets.length < MAX_BUCKETS) {
     const next =
-      size === 'month' ? addMonth(cursor) : cursor + (size === 'week' ? 7 * DAY : DAY);
+      size === 'month' ? addMonth(cursor) : addDays(cursor, size === 'week' ? 7 : 1);
     buckets.push({ start: cursor, end: Math.min(next, end) });
     cursor = next;
   }

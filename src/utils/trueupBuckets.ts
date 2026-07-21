@@ -31,9 +31,16 @@ function localDayStart(epochSeconds: number): number {
   return Math.floor(d.getTime() / 1000);
 }
 
+// Date.setMonth overflows on month-end dates — Jan 31 + 1 month lands on Mar 3,
+// skipping February entirely. Pin to day 1 first, then clamp back to the
+// shorter month's last day.
 function addMonth(epochSeconds: number): number {
   const d = new Date(epochSeconds * 1000);
+  const dayOfMonth = d.getDate();
+  d.setDate(1);
   d.setMonth(d.getMonth() + 1);
+  const daysInTargetMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  d.setDate(Math.min(dayOfMonth, daysInTargetMonth));
   return Math.floor(d.getTime() / 1000);
 }
 
@@ -86,10 +93,29 @@ export function toBucketPoints(
   buckets: readonly Bucket[],
   estimates: readonly EstimateResponse[],
 ): TrueupBucketPoint[] {
+  // Positional pairing — a mismatch would silently attribute one bucket's
+  // numbers to another's date, so fail loudly instead.
+  if (buckets.length !== estimates.length) {
+    throw new Error(
+      `trueup series mismatch: ${buckets.length} buckets, ${estimates.length} estimates`,
+    );
+  }
+
   let running = 0;
   return buckets.map((bucket, idx) => {
     const point = toBucketPoint(bucket.start, estimates[idx], running);
     running = point.cumulative_net;
     return point;
   });
+}
+
+// True when the bucket list stops short of the requested range because
+// MAX_BUCKETS was hit. The chart must say so rather than quietly showing a
+// shorter period than the headline covers.
+export function bucketsAreTruncated(
+  buckets: readonly Bucket[],
+  end: number,
+): boolean {
+  if (buckets.length === 0) return false;
+  return buckets[buckets.length - 1].end < end;
 }

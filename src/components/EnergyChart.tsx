@@ -10,6 +10,7 @@ import type { TimeRange } from "@/api/types";
 import { fetchWindows } from "@/api/energy";
 import type { WindowsResponse, WindowItem } from "@/api/types";
 import { toDisplayData, formatDateLabel, computeXTicks, formatChartTick, CHART_FONT } from "@/utils/formatters";
+import { mirroredMaxWh } from "@/utils/energyFlow";
 import styles from "./EnergyChart.module.css";
 
 interface Props {
@@ -69,17 +70,9 @@ export function EnergyChart({ range, start, end, displayEnd = end, limit, onWind
 
   const xTicks = computeXTicks(range, start, displayEnd);
 
-  const rawMax =
-    windows.length > 0
-      ? Math.max(
-          ...windows.map((w) =>
-            Math.max(
-              w.wh_produced + w.wh_grid_import,
-              w.wh_consumed + w.wh_grid_export,
-            )
-          )
-        )
-      : 1000;
+  // Scale from displayData, not windows: grid flow is netted for display, so
+  // gross import/export would size the axis for stacks that are never drawn.
+  const rawMax = mirroredMaxWh(displayData);
 
   // Round up to a nice step so ticks are evenly spaced and human-readable.
   const HALF_STEPS = 2;

@@ -1,8 +1,7 @@
 import { useState, useEffect, useLayoutEffect, useRef, useCallback, useReducer } from 'react';
-import { fetchTrueupEstimate, fetchTrueupSeries } from '@/api/tou';
+import { fetchTrueupEstimate, fetchTrueupSeries, type TrueupSeries } from '@/api/tou';
 import { ApiError } from '@/api/client';
 import type { EstimateResponse, PeriodDetail } from '@/api/types';
-import type { TrueupBucketPoint } from '@/utils/trueupBuckets';
 import { TrueupChart } from './TrueupChart';
 import styles from './TrueupPanel.module.css';
 
@@ -57,16 +56,18 @@ function formatUsd(amount: number): string {
 
 // --- Estimate reducer ---
 
+const EMPTY_SERIES: TrueupSeries = { points: [], truncatedAt: null };
+
 interface EstimateState {
   isLoading: boolean;
   estimate: EstimateResponse | null;
-  series: TrueupBucketPoint[];
+  series: TrueupSeries;
   estimateError: ErrorInfo | null;
 }
 
 type EstimateAction =
   | { type: 'fetch_start' }
-  | { type: 'fetch_success'; estimate: EstimateResponse; series: TrueupBucketPoint[] }
+  | { type: 'fetch_success'; estimate: EstimateResponse; series: TrueupSeries }
   | { type: 'fetch_error'; error: ErrorInfo };
 
 function estimateReducer(state: EstimateState, action: EstimateAction): EstimateState {
@@ -81,7 +82,12 @@ function estimateReducer(state: EstimateState, action: EstimateAction): Estimate
         estimateError: null,
       };
     case 'fetch_error':
-      return { isLoading: false, estimate: null, series: [], estimateError: action.error };
+      return {
+        isLoading: false,
+        estimate: null,
+        series: EMPTY_SERIES,
+        estimateError: action.error,
+      };
   }
 }
 
@@ -212,7 +218,7 @@ export function TrueupPanel() {
   const [estimateState, dispatchEstimate] = useReducer(estimateReducer, {
     isLoading: false,
     estimate: null,
-    series: [],
+    series: EMPTY_SERIES,
     estimateError: null,
   });
 
@@ -229,6 +235,18 @@ export function TrueupPanel() {
     dispatchEstimate({ type: 'fetch_start' });
     const start = dateInputToEpoch(startDateRef.current);
     const end = dateInputToEpoch(endDateRef.current);
+
+    // The range is half-open, and the API layer shifts `end` back a day to match
+    // the bridge's inclusive-end semantics. An empty or backwards range would
+    // therefore be sent as end-before-start; reject it here instead.
+    if (end <= start) {
+      dispatchEstimate({
+        type: 'fetch_error',
+        error: { type: 'generic', message: 'End date must be after start date' },
+      });
+      return;
+    }
+
     try {
       // Summary and series are fetched together so the panel never renders a
       // verdict that disagrees with the chart below it.
@@ -311,7 +329,7 @@ export function TrueupPanel() {
             <PeriodCard label="Super Off-Peak" detail={estimate.breakdown.super_off_peak} />
           </div>
 
-          <TrueupChart points={series} />
+          <TrueupChart points={series.points} truncatedAt={series.truncatedAt} />
         </>
       )}
     </div>

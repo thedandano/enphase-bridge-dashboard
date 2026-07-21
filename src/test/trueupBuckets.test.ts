@@ -3,6 +3,7 @@ import {
   chooseBucketSize,
   buildBuckets,
   toBucketPoints,
+  bucketsAreTruncated,
   MAX_BUCKETS,
 } from '@/utils/trueupBuckets';
 import type { EstimateResponse } from '@/api/types';
@@ -93,5 +94,51 @@ describe('toBucketPoints', () => {
     const buckets = buildBuckets(START, START + 3 * DAY, 'day');
     const points = toBucketPoints(buckets, [estimate(10), estimate(-4), estimate(-9)]);
     expect(points.map((p) => p.cumulative_net)).toEqual([10, 6, -3]);
+  });
+});
+
+describe('addMonth boundary handling', () => {
+  // Date.setMonth overflows: Jan 31 + 1 month lands on Mar 3, skipping February.
+  it('clamps to the last day of a shorter month instead of overflowing', () => {
+    const jan31 = Math.floor(new Date('2026-01-31T00:00:00').getTime() / 1000);
+    const buckets = buildBuckets(jan31, jan31 + 120 * DAY, 'month');
+    const secondStart = new Date(buckets[1].start * 1000);
+    expect(secondStart.getMonth()).toBe(1); // February, not March
+    expect(secondStart.getDate()).toBe(28); // 2026 is not a leap year
+  });
+
+  it('keeps the day of month when the target month is long enough', () => {
+    const jan15 = Math.floor(new Date('2026-01-15T00:00:00').getTime() / 1000);
+    const buckets = buildBuckets(jan15, jan15 + 120 * DAY, 'month');
+    const secondStart = new Date(buckets[1].start * 1000);
+    expect(secondStart.getMonth()).toBe(1);
+    expect(secondStart.getDate()).toBe(15);
+  });
+});
+
+describe('bucketsAreTruncated', () => {
+  it('reports truncation when MAX_BUCKETS cuts the range short', () => {
+    const end = START + 400 * DAY;
+    const buckets = buildBuckets(START, end, 'day');
+    expect(buckets).toHaveLength(MAX_BUCKETS);
+    expect(bucketsAreTruncated(buckets, end)).toBe(true);
+  });
+
+  it('reports no truncation when the buckets reach the range end', () => {
+    const end = START + 3 * DAY;
+    expect(bucketsAreTruncated(buildBuckets(START, end, 'day'), end)).toBe(false);
+  });
+
+  it('reports no truncation for an empty bucket list', () => {
+    expect(bucketsAreTruncated([], START)).toBe(false);
+  });
+});
+
+describe('toBucketPoints input validation', () => {
+  // Positional pairing means a length mismatch would attribute one bucket's
+  // numbers to another's date.
+  it('throws rather than mispairing when lengths disagree', () => {
+    const buckets = buildBuckets(START, START + 3 * DAY, 'day');
+    expect(() => toBucketPoints(buckets, [estimate(1)])).toThrow(/mismatch/);
   });
 });

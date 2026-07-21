@@ -115,6 +115,7 @@ Energy Flow uses theme signal colors for production and consumption. Production 
 - `heatmapTransform.ts` — `buildHeatmapRows` for day-shape aggregation and `buildSeasonalHeatmapRows` for day-level aggregation
 - `inverterDailyTotals.ts` — per-inverter Wh totals, median helpers, and display formatting
 - `trueupBuckets.ts` — `chooseBucketSize` / `buildBuckets` / `toBucketPoints` for the true-up time series
+- `energyFlow.ts` — `solarToHomeWh` (solar serving the house directly) and `mirroredMaxWh` (Y-axis sizing for the mirrored chart)
 - `inverterColors.ts` / `spectrumColor.ts` — shared color helpers for inverter visuals
 
 ### Styling
@@ -145,7 +146,9 @@ Unit tests cover pure helpers and hooks. Test files are one-to-one with the thin
 | `inverterHeatmap.test.ts` | heatmap aggregation helpers |
 | `spectrumColor.test.ts` | heatmap color scale |
 | `trueupPanel.test.tsx` | true-up panel behavior |
-| `trueupBuckets.test.ts` | true-up bucketing and series accumulation |
+| `trueupBuckets.test.ts` | true-up bucketing, month boundaries, truncation |
+| `trueupEstimateRange.test.ts` | true-up request range (inclusive-end shift) |
+| `solarToHome.test.ts` | `solarToHomeWh`, `mirroredMaxWh` |
 | `smoke.test.tsx` | render smoke tests (fetch stubbed to never-resolve) |
 
 Vitest runs in `jsdom` with `@testing-library/react`; setup file is `src/test/setup.ts`. Tests that depend on date formatting run under `TZ=UTC` (enforced by the pre-push hook and CI).

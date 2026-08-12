@@ -30,6 +30,7 @@ const makeEstimate = (overrides: Partial<EstimateResponse> = {}): EstimateRespon
 describe('TrueupPanel', () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    localStorage.clear();
   });
 
   it('renders without throwing in the loading state', () => {
@@ -124,7 +125,7 @@ describe('TrueupPanel', () => {
     const spy = vi.spyOn(clientModule, 'apiFetch').mockResolvedValue(makeEstimate());
     render(<TrueupPanel />);
 
-    const start = screen.getByLabelText(/start/i) as HTMLInputElement;
+    const start = screen.getByLabelText(/^start$/i) as HTMLInputElement;
     const end = screen.getByLabelText(/end/i) as HTMLInputElement;
     fireEvent.change(start, { target: { value: '2026-07-21' } });
     fireEvent.change(end, { target: { value: '2026-07-21' } });
@@ -175,5 +176,65 @@ describe('TrueupPanel', () => {
     await waitFor(() =>
       expect(screen.getByText(/Unknown error/)).toBeInTheDocument(),
     );
+  });
+
+  describe('pinned start date', () => {
+    const thirtyDaysAgo = () => {
+      const d = new Date(Date.now() - 30 * 86400 * 1000);
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return `${d.getFullYear()}-${mm}-${dd}`;
+    };
+
+    it('loads the pinned start date on mount', () => {
+      localStorage.setItem('trueup.pinnedStart', '2026-01-15');
+      vi.spyOn(clientModule, 'apiFetch').mockReturnValue(new Promise(() => {}));
+      render(<TrueupPanel />);
+      expect((screen.getByLabelText(/^start$/i) as HTMLInputElement).value).toBe('2026-01-15');
+    });
+
+    it('defaults to 30 days ago when nothing is pinned', () => {
+      vi.spyOn(clientModule, 'apiFetch').mockReturnValue(new Promise(() => {}));
+      render(<TrueupPanel />);
+      expect((screen.getByLabelText(/^start$/i) as HTMLInputElement).value).toBe(thirtyDaysAgo());
+    });
+
+    it('falls back to the default when the stored value is corrupt', () => {
+      localStorage.setItem('trueup.pinnedStart', 'garbage');
+      vi.spyOn(clientModule, 'apiFetch').mockReturnValue(new Promise(() => {}));
+      render(<TrueupPanel />);
+      expect((screen.getByLabelText(/^start$/i) as HTMLInputElement).value).toBe(thirtyDaysAgo());
+    });
+
+    it('pin button stores the current start date, and unpins on second click', () => {
+      vi.spyOn(clientModule, 'apiFetch').mockReturnValue(new Promise(() => {}));
+      render(<TrueupPanel />);
+
+      fireEvent.change(screen.getByLabelText(/^start$/i), { target: { value: '2026-01-15' } });
+      const pin = screen.getByRole('button', { name: /pin start date/i });
+      expect(pin).toHaveAttribute('aria-pressed', 'false');
+
+      fireEvent.click(pin);
+      expect(localStorage.getItem('trueup.pinnedStart')).toBe('2026-01-15');
+      expect(pin).toHaveAttribute('aria-pressed', 'true');
+
+      fireEvent.click(pin);
+      expect(localStorage.getItem('trueup.pinnedStart')).toBeNull();
+      expect(pin).toHaveAttribute('aria-pressed', 'false');
+    });
+
+    it('shows the pin as inactive once the start date moves off the pinned value', () => {
+      localStorage.setItem('trueup.pinnedStart', '2026-01-15');
+      vi.spyOn(clientModule, 'apiFetch').mockReturnValue(new Promise(() => {}));
+      render(<TrueupPanel />);
+
+      const pin = screen.getByRole('button', { name: /pin start date/i });
+      expect(pin).toHaveAttribute('aria-pressed', 'true');
+
+      fireEvent.change(screen.getByLabelText(/^start$/i), { target: { value: '2026-03-01' } });
+      expect(pin).toHaveAttribute('aria-pressed', 'false');
+      // Browsing must not move the pin.
+      expect(localStorage.getItem('trueup.pinnedStart')).toBe('2026-01-15');
+    });
   });
 });

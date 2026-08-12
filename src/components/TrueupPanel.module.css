@@ -79,6 +79,34 @@
   cursor: not-allowed;
 }
 
+.pinBtn {
+  font-size: 0.8125rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.3rem 0.5rem;
+  cursor: pointer;
+  filter: grayscale(1);
+  opacity: 0.6;
+  transition: border-color 0.15s, opacity 0.15s;
+}
+
+.pinBtn:hover {
+  border-color: var(--fg);
+  opacity: 1;
+}
+
+.pinBtnActive {
+  filter: none;
+  opacity: 1;
+  border-color: var(--focus-ring);
+}
+
+.pinBtn:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
 /* Loading */
 .loading {
   font-family: var(--font-ui);

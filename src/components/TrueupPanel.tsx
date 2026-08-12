@@ -26,6 +26,14 @@ function thirtyDaysAgoDateInput(): string {
   return epochToDateInput(Math.floor(Date.now() / 1000) - 30 * 86400);
 }
 
+const PINNED_START_KEY = 'trueup.pinnedStart';
+
+// A corrupt stored value would feed NaN into the fetch range — treat it as unset.
+function readPinnedStart(): string | null {
+  const v = localStorage.getItem(PINNED_START_KEY);
+  return v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null;
+}
+
 interface ErrorInfo {
   type: 'no_schedule' | 'no_data' | 'generic';
   message: string;
@@ -212,8 +220,22 @@ function PeriodCard({ label, detail }: PeriodCardProps) {
 // --- Main component ---
 
 export function TrueupPanel() {
-  const [startDate, setStartDate] = useState<string>(thirtyDaysAgoDateInput);
+  const [startDate, setStartDate] = useState<string>(
+    () => readPinnedStart() ?? thirtyDaysAgoDateInput(),
+  );
   const [endDate, setEndDate] = useState<string>(todayDateInput);
+  const [pinnedStart, setPinnedStart] = useState<string | null>(readPinnedStart);
+
+  const isPinned = pinnedStart === startDate;
+  const togglePin = () => {
+    if (isPinned) {
+      localStorage.removeItem(PINNED_START_KEY);
+      setPinnedStart(null);
+    } else {
+      localStorage.setItem(PINNED_START_KEY, startDate);
+      setPinnedStart(startDate);
+    }
+  };
 
   const [estimateState, dispatchEstimate] = useReducer(estimateReducer, {
     isLoading: false,
@@ -284,6 +306,16 @@ export function TrueupPanel() {
             onChange={(e) => setStartDate(e.target.value)}
           />
         </label>
+        <button
+          type="button"
+          className={`${styles.pinBtn} ${isPinned ? styles.pinBtnActive : ''}`}
+          onClick={togglePin}
+          aria-pressed={isPinned}
+          aria-label="Pin start date so it loads on refresh"
+          title="Pin start date so it loads on refresh"
+        >
+          📌
+        </button>
         <label className={styles.dateLabel}>
           End
           <input

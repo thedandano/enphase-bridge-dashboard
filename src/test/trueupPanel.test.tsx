@@ -119,9 +119,32 @@ describe('TrueupPanel', () => {
     );
   });
 
-  // The API layer shifts `end` back a day for the bridge's inclusive-end
-  // semantics, so an empty or backwards range would be sent end-before-start.
-  it('rejects an end date that is not after the start date', async () => {
+  // The End date is inclusive, and the API layer shifts the actual request end
+  // back a day for the bridge's inclusive-end semantics — so only an end
+  // strictly before the start is an invalid range.
+  it('rejects an end date before the start date', async () => {
+    const spy = vi.spyOn(clientModule, 'apiFetch').mockResolvedValue(makeEstimate());
+    render(<TrueupPanel />);
+
+    const start = screen.getByLabelText(/^start$/i) as HTMLInputElement;
+    const end = screen.getByLabelText(/end/i) as HTMLInputElement;
+    fireEvent.change(start, { target: { value: '2026-07-21' } });
+    fireEvent.change(end, { target: { value: '2026-07-20' } });
+
+    await waitFor(() => {
+      expect(screen.getByText(/End date must not be before start date/)).toBeInTheDocument();
+    });
+    // No request should go out for an invalid range.
+    spy.mockClear();
+    fireEvent.click(screen.getByRole('button', { name: /fetch/i }));
+    await waitFor(() => {
+      expect(screen.getByText(/End date must not be before start date/)).toBeInTheDocument();
+    });
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  // A same-day range is now valid — it's one full day, not an empty range.
+  it('accepts a same-day start and end date', async () => {
     const spy = vi.spyOn(clientModule, 'apiFetch').mockResolvedValue(makeEstimate());
     render(<TrueupPanel />);
 
@@ -131,15 +154,89 @@ describe('TrueupPanel', () => {
     fireEvent.change(end, { target: { value: '2026-07-21' } });
 
     await waitFor(() => {
-      expect(screen.getByText(/End date must be after start date/)).toBeInTheDocument();
+      expect(spy).toHaveBeenCalled();
     });
-    // No request should go out for an invalid range.
-    spy.mockClear();
-    fireEvent.click(screen.getByRole('button', { name: /fetch/i }));
-    await waitFor(() => {
-      expect(screen.getByText(/End date must be after start date/)).toBeInTheDocument();
-    });
-    expect(spy).not.toHaveBeenCalled();
+    expect(screen.queryByText(/must not be before/)).not.toBeInTheDocument();
+  });
+
+  // Picking today as the End date must request through today, not through
+  // yesterday (the request end is shifted back a day, so it should land on
+  // tomorrow's midnight to cover all of today).
+  it('requests through today when the End date is today', async () => {
+    const spy = vi.spyOn(clientModule, 'apiFetch').mockResolvedValue(makeEstimate());
+    render(<TrueupPanel />);
+
+    await waitFor(() => expect(spy).toHaveBeenCalled());
+    const estimateCall = spy.mock.calls.find((c) =>
+      String(c[0]).startsWith('trueup/estimate'),
+    );
+    const params = new URLSearchParams(String(estimateCall![0]).split('?')[1]);
+    const requestedEnd = new Date(params.get('end')!);
+    const today = new Date();
+    expect(requestedEnd.getUTCFullYear()).toBe(today.getFullYear());
+    expect(requestedEnd.getUTCMonth()).toBe(today.getMonth());
+    expect(requestedEnd.getUTCDate()).toBe(today.getDate());
+  });
+
+  it('keeps showing the last estimate while a background refresh is loading', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const spy = vi.spyOn(clientModule, 'apiFetch').mockResolvedValue(makeEstimate());
+    render(<TrueupPanel />);
+    await waitFor(() => expect(screen.getByText('Peak')).toBeInTheDocument());
+
+    // Next refresh call hangs — the previously rendered estimate must stay put.
+    spy.mockReturnValue(new Promise(() => {}));
+    await vi.advanceTimersByTimeAsync(15 * 60 * 1000);
+
+    expect(screen.getByText('Peak')).toBeInTheDocument();
+    expect(screen.queryByText('Loading estimate…')).not.toBeInTheDocument();
+    vi.useRealTimers();
+  });
+
+  it('auto-refreshes every 15 minutes while the range includes today', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const spy = vi.spyOn(clientModule, 'apiFetch').mockResolvedValue(makeEstimate());
+    render(<TrueupPanel />);
+    await waitFor(() => expect(screen.getByText('Peak')).toBeInTheDocument());
+
+    const callsAfterMount = spy.mock.calls.length;
+    await vi.advanceTimersByTimeAsync(15 * 60 * 1000);
+    expect(spy.mock.calls.length).toBeGreaterThan(callsAfterMount);
+    vi.useRealTimers();
+  });
+
+  it('does not auto-refresh once the End date is in the past', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const spy = vi.spyOn(clientModule, 'apiFetch').mockResolvedValue(makeEstimate());
+    render(<TrueupPanel />);
+    await waitFor(() => expect(screen.getByText('Peak')).toBeInTheDocument());
+
+    fireEvent.change(screen.getByLabelText(/^start$/i), { target: { value: '2019-12-01' } });
+    fireEvent.change(screen.getByLabelText(/end/i), { target: { value: '2020-01-01' } });
+    // "Peak" only renders once fetch_success dispatches, which only happens after
+    // every apiFetch call this doFetch triggered (estimate + all series batches)
+    // has settled — so this wait guarantees the new fetch is fully done.
+    await waitFor(() => expect(screen.getByText('Peak')).toBeInTheDocument());
+
+    const callsAfterDateChange = spy.mock.calls.length;
+    await vi.advanceTimersByTimeAsync(15 * 60 * 1000);
+    expect(spy.mock.calls.length).toBe(callsAfterDateChange);
+    vi.useRealTimers();
+  });
+
+  it('does not auto-refresh while the tab is hidden', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const spy = vi.spyOn(clientModule, 'apiFetch').mockResolvedValue(makeEstimate());
+    render(<TrueupPanel />);
+    await waitFor(() => expect(screen.getByText('Peak')).toBeInTheDocument());
+
+    Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
+    const callsBeforeTick = spy.mock.calls.length;
+    await vi.advanceTimersByTimeAsync(15 * 60 * 1000);
+    expect(spy.mock.calls.length).toBe(callsBeforeTick);
+
+    Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true });
+    vi.useRealTimers();
   });
 
   it('renders no_tou_schedule error with warning style', async () => {

@@ -2,8 +2,13 @@ import { useState, useEffect, useLayoutEffect, useRef, useCallback, useReducer }
 import { fetchTrueupEstimate, fetchTrueupSeries, type TrueupSeries } from '@/api/tou';
 import { ApiError } from '@/api/client';
 import type { EstimateResponse, PeriodDetail } from '@/api/types';
+import { addDays } from '@/utils/trueupBuckets';
 import { TrueupChart } from './TrueupChart';
 import styles from './TrueupPanel.module.css';
+
+// Bridge data lands in 15-minute windows — refreshing more often than that
+// just re-requests the same numbers.
+const TRUEUP_REFRESH_MS = 15 * 60 * 1000;
 
 function dateInputToEpoch(value: string): number {
   // value is "YYYY-MM-DD"
@@ -256,18 +261,21 @@ export function TrueupPanel() {
   const doFetch = useCallback(async () => {
     dispatchEstimate({ type: 'fetch_start' });
     const start = dateInputToEpoch(startDateRef.current);
-    const end = dateInputToEpoch(endDateRef.current);
+    const endInput = dateInputToEpoch(endDateRef.current);
 
-    // The range is half-open, and the API layer shifts `end` back a day to match
-    // the bridge's inclusive-end semantics. An empty or backwards range would
-    // therefore be sent as end-before-start; reject it here instead.
-    if (end <= start) {
+    // The End date is inclusive (picking today should count today), but the
+    // fetch range is half-open, and the API layer shifts `end` back a day to
+    // match the bridge's inclusive-end semantics. So the actual request end is
+    // midnight the day *after* the selected End date. addDays is DST-safe —
+    // a plain +86400 drifts off midnight across a clock change.
+    if (endInput < start) {
       dispatchEstimate({
         type: 'fetch_error',
-        error: { type: 'generic', message: 'End date must be after start date' },
+        error: { type: 'generic', message: 'End date must not be before start date' },
       });
       return;
     }
+    const end = addDays(endInput, 1);
 
     try {
       // Summary and series are fetched together so the panel never renders a
@@ -289,6 +297,17 @@ export function TrueupPanel() {
     // fetchTrigger is a derived string that changes when start/end change;
     // including it alongside stable doFetch is intentional to re-run on date changes.
   }, [doFetch, fetchTrigger]);
+
+  // Auto-refresh while the range includes today — a past range never changes,
+  // so a fixed End date before today stops the timer.
+  useEffect(() => {
+    if (endDate < todayDateInput()) return;
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'hidden') return;
+      void doFetch();
+    }, TRUEUP_REFRESH_MS);
+    return () => clearInterval(interval);
+  }, [doFetch, endDate]);
 
   const { isLoading, estimate, series, estimateError } = estimateState;
 
@@ -334,7 +353,9 @@ export function TrueupPanel() {
         </button>
       </div>
 
-      {isLoading && <div className={styles.loading}>Loading estimate…</div>}
+      {/* A background refresh (isLoading with a prior estimate) keeps showing
+          that estimate instead of flashing back to the loading state. */}
+      {isLoading && !estimate && <div className={styles.loading}>Loading estimate…</div>}
 
       {!isLoading && estimateError && (
         <div
@@ -348,7 +369,7 @@ export function TrueupPanel() {
         </div>
       )}
 
-      {!isLoading && estimate && (
+      {estimate && (
         <>
           <VerdictBlock
             estimate={estimate}

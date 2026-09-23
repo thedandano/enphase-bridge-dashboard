@@ -69,6 +69,15 @@ Each component fetches its own data via `useAutoRefresh<T>(fetchFn)` from `src/h
 ### True-up panel
 
 `TrueupPanel` keeps its own date pickers, independent of `ChartPanel`'s range selector.
+The **End date is inclusive** — picking today counts today's data so far. Internally the
+fetch range is half-open, so `doFetch` requests through midnight the day *after* End,
+using the DST-safe `addDays` from `trueupBuckets.ts` (a plain `+86400` drifts off midnight
+across a clock change).
+
+While End is today or later, the panel refetches itself every 15 minutes (bridge data
+lands in 15-minute windows, so refreshing faster just re-requests the same numbers) —
+skipped while the tab is hidden, and stopped once End moves into the past. A background
+refresh keeps showing the last estimate instead of blanking to a loading state.
 
 The summary states the verdict in words — `CREDIT` / `OWED` / `BREAK EVEN` — with an
 **unsigned** dollar amount, so the sign of `net_cost_usd` is never shown to the user
@@ -83,8 +92,9 @@ right-hand axis shows when the balance flips to credit.
 The bridge has **no true-up time-series endpoint**, so `fetchTrueupSeries` issues one
 `trueup/estimate` call per bucket. `chooseBucketSize` steps day → week → month with range
 length, capped at `MAX_BUCKETS` (16) calls, fetched in batches of 4. Any bucket failing
-rejects the whole series — the chart never renders with silent gaps. This runs only on
-explicit Fetch / date change, never on the 30 s auto-refresh loop.
+rejects the whole series — the chart never renders with silent gaps. This runs on
+explicit Fetch, date change, and the panel's own 15-minute timer described above — it is
+separate from the dashboard's 30 s auto-refresh loop (`useAutoRefresh`).
 
 ### Inverter diagnostics
 

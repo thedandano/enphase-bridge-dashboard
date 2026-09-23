@@ -36,7 +36,7 @@ function localDayStart(epochSeconds: number): number {
 // after a fall-back it lands on the *previous* day (Sat 23:00 rather than
 // Sun 00:00). Bucket ends feed an API that rounds to whole days, so that drift
 // silently shifts a day between buckets.
-function addDays(epochSeconds: number, days: number): number {
+export function addDays(epochSeconds: number, days: number): number {
   const d = new Date(epochSeconds * 1000);
   d.setDate(d.getDate() + days);
   d.setHours(0, 0, 0, 0);

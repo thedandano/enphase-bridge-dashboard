@@ -22,11 +22,13 @@ interface Props {
   onWindowSelect?: (windowStart: number) => void;
 }
 
+// Separate stacks keep zero grid flow on its own side of the axis. Recharts
+// signed stacking otherwise sends zero export points to the positive stack.
 const SERIES = [
-  { key: "wh_produced", label: "Production", color: "var(--signal-production)" },
-  { key: "wh_consumed", label: "Consumption", color: "var(--signal-consumption)" },
-  { key: "wh_grid_export", label: "Grid export", color: "#888888" },
-  { key: "wh_grid_import", label: "Grid import", color: "#888888" },
+  { key: "wh_produced", label: "Production", color: "var(--signal-production)", opacity: 1, stack: "supply" },
+  { key: "wh_grid_import", label: "Grid import", color: "var(--chart-grid)", opacity: 0.75, stack: "supply" },
+  { key: "wh_consumed", label: "Consumption", color: "var(--signal-consumption)", opacity: 1, stack: "demand" },
+  { key: "wh_grid_export", label: "Grid export", color: "var(--chart-grid)", opacity: 0.68, stack: "demand" },
 ] as const;
 
 // Recharts' default bar cursor fills the whole category band, which reads as
@@ -57,6 +59,13 @@ const NEGATED_LABELS = new Set<string>(
   SERIES.filter((s) => s.key === "wh_consumed" || s.key === "wh_grid_export").map((s) => s.label)
 );
 
+function formatTooltip(value: unknown, name: unknown) {
+  const v = typeof value === "number" ? value : 0;
+  const n = String(name ?? "");
+  if (v === 0) return null;
+  const display = NEGATED_LABELS.has(n) ? Math.abs(v) : v;
+  return [`${display.toFixed(2)} Wh`, n];
+}
 
 export function EnergyChart({ range, start, end, displayEnd = end, limit, onWindowSelect }: Props) {
   const [chartStyle, setChartStyle] = useState<'area' | 'bar'>(() => {
@@ -136,6 +145,7 @@ export function EnergyChart({ range, start, end, displayEnd = end, limit, onWind
       ) : chartStyle === "area" ? (
           <ResponsiveContainer width="100%" height={300}>
             <AreaChart
+              stackOffset="none"
               data={displayData}
               onClick={isInspectable ? handleClick : undefined}
               style={{ cursor: isInspectable ? "pointer" : "default" }}
@@ -157,6 +167,7 @@ export function EnergyChart({ range, start, end, displayEnd = end, limit, onWind
                 ticks={yTicks}
                 tickFormatter={yTickFormatter}
               />
+              <ReferenceLine y={0} stroke="var(--fg-muted)" strokeDasharray="5 4" />
               <Tooltip
                 contentStyle={{
                   background: "#131217",
@@ -166,21 +177,13 @@ export function EnergyChart({ range, start, end, displayEnd = end, limit, onWind
                   fontSize: "12px",
                 }}
                 labelFormatter={(v: unknown) => (typeof v === "number" ? formatChartTick(range, v) : String(v))}
-                formatter={(value: unknown, name: unknown) => {
-                  const v = typeof value === "number" ? value : 0;
-                  const n = String(name ?? "");
-                  // Grid flows are netted, so the unused direction is always 0.
-                  // Listing it reads as a contradiction ("exported and imported
-                  // in the same window"), so omit the empty side.
-                  if (v === 0) return null;
-                  const display = NEGATED_LABELS.has(n) ? Math.abs(v) : v;
-                  return [`${display.toFixed(2)} Wh`, n];
-                }}
+                formatter={formatTooltip}
               />
               {SERIES.map((s, i) => (
                 <Area
                   key={s.key}
-                  type="monotone"
+                  type="linear"
+                  stackId={s.stack}
                   dataKey={s.key}
                   stroke={s.color}
                   fill={s.color}
@@ -231,7 +234,7 @@ export function EnergyChart({ range, start, end, displayEnd = end, limit, onWind
                 ticks={yTicks}
                 tickFormatter={yTickFormatter}
               />
-              <ReferenceLine y={0} stroke="#6272a4" strokeDasharray="5 4" />
+              <ReferenceLine y={0} stroke="var(--fg-muted)" strokeDasharray="5 4" />
               <Tooltip
                 cursor={<HoverCursor />}
                 contentStyle={{
@@ -242,21 +245,11 @@ export function EnergyChart({ range, start, end, displayEnd = end, limit, onWind
                   fontSize: "12px",
                 }}
                 labelFormatter={(v: unknown) => (typeof v === "number" ? formatChartTick(range, v) : String(v))}
-                formatter={(value: unknown, name: unknown) => {
-                  const v = typeof value === "number" ? value : 0;
-                  const n = String(name ?? "");
-                  // Grid flows are netted, so the unused direction is always 0.
-                  // Listing it reads as a contradiction ("exported and imported
-                  // in the same window"), so omit the empty side.
-                  if (v === 0) return null;
-                  const display = NEGATED_LABELS.has(n) ? Math.abs(v) : v;
-                  return [`${display.toFixed(2)} Wh`, n];
-                }}
+                formatter={formatTooltip}
               />
-              <Bar dataKey="wh_produced"    stackId="energy" fill="var(--signal-production)" fillOpacity={1.0}  name="Production" />
-              <Bar dataKey="wh_grid_import" stackId="energy" fill="#888888" fillOpacity={0.75} name="Grid import" />
-              <Bar dataKey="wh_consumed"    stackId="energy" fill="var(--signal-consumption)" fillOpacity={1.0}  name="Consumption" />
-              <Bar dataKey="wh_grid_export" stackId="energy" fill="#888888" fillOpacity={0.68} name="Grid export" />
+              {SERIES.map((s) => (
+                <Bar key={s.key} dataKey={s.key} stackId="energy" fill={s.color} fillOpacity={s.opacity} name={s.label} />
+              ))}
             </BarChart>
           </ResponsiveContainer>
         )}

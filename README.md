@@ -11,7 +11,7 @@ React dashboard for the [enphase-bridge](https://github.com/thedandano/enphase-b
 - **Header health** shows bridge online/stale/offline state, token lifetime, data freshness, tablet/fullscreen mode, and display settings.
 - **Flow strip** gives a compact live view of production, consumption, grid import/export, and battery-style flow status.
 - **Energy Flow** shows production, consumption, grid import, and grid export over the selected time range. The Area/Bars selector lives inside this chart and persists in the browser. The `today` view keeps a full midnight-to-midnight x-axis even while the day is still in progress.
-- **Inverter Heatmap** sits beside Energy Flow. It follows the selected time range and supports:
+- **Inverter Heatmap** sits beside Energy Flow. It follows the selected time range. The mode control is hidden; the dashboard always displays Day shape. The internal transforms support:
   - **Day shape**: aggregates snapshots by inverter and 15-minute local-time slot, so repeated days collapse into one 24-hour profile.
   - **Seasonal**: aggregates snapshots by inverter and calendar day, so longer ranges can show panel changes over time.
   - A centered color legend below the x-axis.

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
 import * as clientModule from '@/api/client';
 import { ApiError } from '@/api/client';
 import { TrueupPanel } from '@/components/TrueupPanel';
@@ -48,14 +48,14 @@ describe('TrueupPanel', () => {
     });
   });
 
-  it('reads OWED with an unsigned amount when net cost is positive', async () => {
+  it('keeps the headline owed amount plain without parentheses', async () => {
     vi.spyOn(clientModule, 'apiFetch').mockResolvedValue(makeEstimate({ net_cost_usd: 2.43 }));
     render(<TrueupPanel />);
     await waitFor(() => {
       expect(screen.getByTestId('trueup-verdict')).toHaveTextContent('OWED');
     });
     // The amount is never signed — the verdict word carries the direction.
-    expect(screen.getByTestId('trueup-verdict-amount')).toHaveTextContent('$2.43');
+    expect(screen.getByTestId('trueup-verdict-amount')).toHaveTextContent(/^\$2\.43$/);
   });
 
   it('reads CREDIT in green when net cost is negative', async () => {
@@ -69,7 +69,7 @@ describe('TrueupPanel', () => {
     expect(screen.getByTestId('trueup-verdict-amount')).toHaveTextContent('$5.00');
   });
 
-  it('shows per-period net with a verdict, unsigned', async () => {
+  it('shows per-period net amounts without verdict labels', async () => {
     vi.spyOn(clientModule, 'apiFetch').mockResolvedValue(
       makeEstimate({
         breakdown: {
@@ -87,11 +87,32 @@ describe('TrueupPanel', () => {
     await waitFor(() => {
       expect(screen.getByText('Super Off-Peak')).toBeInTheDocument();
     });
-    // Amounts are unsigned; the adjacent word carries direction.
-    expect(screen.getByText('10.00', { exact: false })).toBeInTheDocument();
-    expect(screen.getAllByText('OWED').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('CREDIT').length).toBeGreaterThan(0);
-    expect(screen.getByText('EVEN')).toBeInTheDocument();
+    // Parentheses distinguish owed amounts without extra verdict labels.
+    expect(screen.getByText('($10.00)')).toBeInTheDocument();
+    expect(screen.getByText('$5.00')).toBeInTheDocument();
+    for (const label of ['Peak', 'Off-Peak', 'Super Off-Peak']) {
+      const card = within(screen.getByText(label).parentElement!);
+      expect(card.queryByText(/^(OWED|CREDIT|EVEN)$/)).not.toBeInTheDocument();
+    }
+  });
+
+  it.each([
+    [5, 2, '3.00'],
+    [2, 5, '-3.00'],
+    [2, 2, '0.00'],
+  ])('shows net energy for import %s and export %s', async (importKwh, exportKwh, amount) => {
+    vi.spyOn(clientModule, 'apiFetch').mockResolvedValue(makeEstimate({
+      breakdown: {
+        peak: makePeriod({ import_kwh: importKwh, export_kwh: exportKwh }),
+        off_peak: makePeriod(),
+        super_off_peak: makePeriod(),
+      },
+    }));
+    render(<TrueupPanel />);
+    const title = await screen.findByText('Peak');
+    const card = within(title.parentElement!);
+    expect(card.getByText(amount)).toBeInTheDocument();
+    expect(card.queryByText(/NET IMPORT|NET EXPORT|BALANCED/)).not.toBeInTheDocument();
   });
 
   it('reads BREAK EVEN when net cost is exactly zero', async () => {

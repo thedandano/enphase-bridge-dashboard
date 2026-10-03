@@ -117,7 +117,7 @@ export function ChartPanel() {
         <div
           className={
             showInverterTotals && showTrueup
-              ? styles.chartPair
+              ? `${styles.chartPair} ${styles.performancePair}`
               : styles.chartSingle
           }
         >

@@ -24,7 +24,7 @@ export function mirroredMaxWh(
   fallback = 1000,
 ): number {
   if (displayWindows.length === 0) return fallback;
-  return Math.max(
+  const maximum = Math.max(
     ...displayWindows.map((w) =>
       Math.max(
         w.wh_produced + w.wh_grid_import,
@@ -32,4 +32,5 @@ export function mirroredMaxWh(
       ),
     ),
   );
+  return maximum || fallback;
 }

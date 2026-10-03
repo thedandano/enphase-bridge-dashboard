@@ -51,6 +51,8 @@ body {
   --signal-grid-export: var(--cyan);
   --signal-grid-import: var(--red);
 
+  --chart-grid: #888888;
+
   /* Status indicators */
   --status-online: var(--green);
   --status-offline: var(--red);

@@ -104,10 +104,15 @@ function estimateReducer(state: EstimateState, action: EstimateAction): Estimate
   }
 }
 
+function formatNetCost(net: number): string {
+  const amount = `$${formatUsd(Math.abs(net))}`;
+  return net > 0 ? `(${amount})` : amount;
+}
+
 // --- Verdict block ---
 
 // net_cost_usd is positive when the user owes, negative when they're in credit.
-// The panel never shows that sign — it states the verdict in words instead.
+// The headline stays unsigned; period-card owed amounts use parentheses.
 function sumBreakdown(
   breakdown: EstimateResponse['breakdown'],
   field: 'import_cost_usd' | 'export_credit_usd',
@@ -183,10 +188,9 @@ interface PeriodCardProps {
 }
 
 function PeriodCard({ label, detail }: PeriodCardProps) {
-  // Same sign convention as the headline: positive means this period cost more
-  // than it earned. The card shows the word, never the sign.
+  // Positive backend net means money owed, displayed in parentheses.
   const net = detail.import_cost_usd - detail.export_credit_usd;
-  const netVerdict = net === 0 ? 'EVEN' : net < 0 ? 'CREDIT' : 'OWED';
+  const netEnergy = detail.import_kwh - detail.export_kwh;
   const netColor = net === 0 ? 'var(--fg)' : net < 0 ? 'var(--green)' : 'var(--red)';
 
   return (
@@ -198,25 +202,25 @@ function PeriodCard({ label, detail }: PeriodCardProps) {
           <span className={styles.metricValue}>{detail.import_kwh.toFixed(2)}</span>
         </div>
         <div className={styles.metricCell}>
-          <span className={styles.metricLabel}>Export kWh</span>
-          <span className={styles.metricValue}>{detail.export_kwh.toFixed(2)}</span>
-        </div>
-        <div className={`${styles.metricCell} ${styles.metricCellCost}`}>
           <span className={styles.metricLabel}>Import Cost</span>
           <span className={styles.metricValue}>${formatUsd(detail.import_cost_usd)}</span>
         </div>
-        <div className={`${styles.metricCell} ${styles.metricCellCost}`}>
+        <div className={styles.metricCell}>
+          <span className={styles.metricLabel}>Export kWh</span>
+          <span className={styles.metricValue}>{detail.export_kwh.toFixed(2)}</span>
+        </div>
+        <div className={styles.metricCell}>
           <span className={styles.metricLabel}>Export Credit</span>
           <span className={styles.metricValue}>${formatUsd(detail.export_credit_usd)}</span>
         </div>
-      </div>
-
-      <div className={styles.periodNet}>
-        <span className={styles.metricLabel}>Net</span>
-        <span className={styles.periodNetValue} style={{ color: netColor }}>
-          ${formatUsd(Math.abs(net))}
-          <span className={styles.periodNetVerdict}>{netVerdict}</span>
-        </span>
+        <div className={`${styles.metricCell} ${styles.periodNet}`}>
+          <span className={styles.metricLabel}>Net kWh</span>
+          <span className={styles.metricValue}>{netEnergy.toFixed(2)}</span>
+        </div>
+        <div className={`${styles.metricCell} ${styles.periodNet}`}>
+          <span className={styles.metricLabel}>Net Cost</span>
+          <span className={styles.metricValue} style={{ color: netColor }}>{formatNetCost(net)}</span>
+        </div>
       </div>
     </div>
   );

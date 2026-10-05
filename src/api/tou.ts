@@ -1,6 +1,7 @@
 import { apiFetch } from './client';
-import type { EstimateResponse, TouRefreshResponse } from './types';
+import type { EstimateResponse, TouRefreshResponse, TouIntervalsResponse } from './types';
 import { epochToRfc3339 } from './time';
+import { validateTouIntervals } from '@/utils/touIntervals';
 import {
   buildBuckets,
   bucketsAreTruncated,
@@ -67,4 +68,10 @@ export async function fetchTrueupSeries(
     points: toBucketPoints(buckets, estimates),
     truncatedAt: truncated ? buckets[buckets.length - 1].end : null,
   };
+}
+
+export async function fetchTouIntervals(start: number, end: number): Promise<TouIntervalsResponse> {
+  const params = new URLSearchParams({ start: String(start), end: String(end) });
+  const data = await apiFetch<TouIntervalsResponse>(`tou/intervals?${params}`);
+  return validateTouIntervals(data, start, end);
 }

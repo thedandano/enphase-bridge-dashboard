@@ -3,6 +3,8 @@ import { render, fireEvent, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { EnergyChart } from '@/components/EnergyChart';
 import * as energy from '@/api/energy';
+import * as touApi from '@/api/tou';
+import type { TouIntervalsResponse } from '@/api/types';
 import * as refresh from '@/hooks/useAutoRefresh';
 import { mirroredMaxWh } from '@/utils/energyFlow';
 
@@ -81,4 +83,52 @@ it('does not draw gray outlines or incomplete dots for zero grid contributions',
     expect(areas[index].querySelector('.recharts-area-curve')).toBeNull();
     expect([...areas[index].querySelectorAll('circle')].every((dot) => dot.getAttribute('opacity') === '0')).toBe(true);
   }
+});
+
+describe('TOU chart overlays', () => {
+  const tou: TouIntervalsResponse = {
+    timezone: 'America/Los_Angeles', schedules: [{ id: 1, source_id: 'revision' }],
+    intervals: [
+      { start: 1000, end: 1900, bracket: 'off_peak', schedule_id: 1 },
+      { start: 1900, end: 3700, bracket: 'peak', schedule_id: 1 },
+    ],
+  };
+  it('adds the same transition in both styles without changing bar positions', async () => {
+    let resolveTou!: (value: TouIntervalsResponse) => void;
+    vi.spyOn(touApi, 'fetchTouIntervals').mockReturnValue(new Promise((resolve) => { resolveTou = resolve; }));
+    vi.spyOn(energy, 'fetchWindows').mockResolvedValue({ windows, total: 3, limit: 3, offset: 0 });
+    const { container } = render(<EnergyChart range="24h" start={1000} end={3700} limit={3} />);
+    await vi.waitFor(() => expect(container.querySelectorAll('.recharts-bar-rectangle').length).toBeGreaterThan(0));
+    const geometry = () => [...container.querySelectorAll('.recharts-bar-rectangle path')].map((bar) => bar.getAttribute('d'));
+    const before = geometry();
+    resolveTou(tou);
+    await vi.waitFor(() => expect(container.querySelectorAll('[data-tou-transition]')).toHaveLength(1));
+    expect(geometry()).toEqual(before);
+    const marker = container.querySelector('[data-tou-transition]')!;
+    const series = container.querySelector('.recharts-bar')!;
+    expect(series.compareDocumentPosition(marker) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(container.querySelectorAll('.recharts-reference-area')).toHaveLength(2);
+    expect(screen.getByLabelText('TOU background bands')).toBeInTheDocument();
+    expect(container.querySelector('[data-tou-transition]')).toHaveAttribute('data-tou-transition', '1900');
+    fireEvent.click(screen.getByRole('button', { name: /Area/ }));
+    await vi.waitFor(() => expect(container.querySelectorAll('[data-tou-transition]')).toHaveLength(1));
+    expect(container.querySelector('[data-tou-transition] title')).toHaveTextContent('Peak');
+    expect(container.querySelectorAll('.recharts-reference-area')).toHaveLength(2);
+  });
+  it('does not fetch or render TOU transitions for week views', async () => {
+    const fetch = vi.spyOn(touApi, 'fetchTouIntervals');
+    vi.spyOn(energy, 'fetchWindows').mockResolvedValue({ windows, total: 3, limit: 3, offset: 0 });
+    const { container } = render(<EnergyChart range="7d" start={1000} end={3700} limit={3} />);
+    await vi.waitFor(() => expect(container.querySelector('.recharts-surface')).toBeInTheDocument());
+    expect(fetch).not.toHaveBeenCalled();
+    expect(container.querySelector('[data-tou-transition]')).toBeNull();
+  });
+  it('shows unavailable and no markers when the endpoint fails', async () => {
+    vi.spyOn(touApi, 'fetchTouIntervals').mockRejectedValue(new Error('Unsupported endpoint'));
+    vi.spyOn(energy, 'fetchWindows').mockResolvedValue({ windows, total: 3, limit: 3, offset: 0 });
+    const { container } = render(<EnergyChart range="24h" start={1000} end={3700} limit={3} />);
+    await vi.waitFor(() => expect(touApi.fetchTouIntervals).toHaveBeenCalled());
+    expect(screen.getByText('TOU unavailable')).toBeInTheDocument();
+    expect(container.querySelector('[data-tou-transition]')).toBeNull();
+  });
 });

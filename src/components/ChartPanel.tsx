@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useTimeRange } from '@/hooks/useTimeRange';
+import { nextLocalMidnightUnix, useTimeRange } from '@/hooks/useTimeRange';
 import type { TimeRange } from '@/api/types';
 import { useDisplayPrefs } from '@/context/DisplayPrefsContext';
 import { EnergyChart } from './EnergyChart';
@@ -16,7 +16,7 @@ function getDayBounds(daysBack: number): { start: number; end: number } {
   d.setDate(d.getDate() - daysBack);
   const start = Math.floor(d.getTime() / 1000);
   if (daysBack === 0) return { start, end: Math.floor(Date.now() / 1000) };
-  return { start, end: start + 86400 };
+  return { start, end: nextLocalMidnightUnix(start) };
 }
 
 function todayLabel(daysBack: number): string {
@@ -46,7 +46,7 @@ export function ChartPanel() {
   const { start, end } = range === 'today'
     ? getDayBounds(daysBack)
     : { start: trStart, end: trEnd };
-  const displayEnd = range === 'today' ? start + 86400 : end;
+  const displayEnd = range === 'today' ? nextLocalMidnightUnix(start) : end;
 
   const handleSetRange = (r: TimeRange) => {
     setRange(r);

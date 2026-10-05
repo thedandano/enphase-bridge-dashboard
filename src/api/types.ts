@@ -94,3 +94,16 @@ export interface EstimateResponse {
   };
   computed_at: number;
 }
+
+export interface TouInterval {
+  start: number;
+  end: number;
+  bracket: 'peak' | 'off_peak' | 'super_off_peak';
+  schedule_id: number;
+}
+
+export interface TouIntervalsResponse {
+  timezone: string;
+  schedules: { id: number; source_id: string }[];
+  intervals: TouInterval[];
+}

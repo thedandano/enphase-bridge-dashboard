@@ -1,16 +1,18 @@
 import {
   AreaChart, Area,
-  BarChart, Bar, ReferenceLine,
+  BarChart, Bar, ReferenceLine, ReferenceArea,
   XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from "recharts";
 import { useState } from "react";
 import type { CategoricalChartFunc } from "recharts/types/chart/types";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
-import type { TimeRange } from "@/api/types";
+import type { TimeRange, TouIntervalsResponse } from "@/api/types";
 import { fetchWindows } from "@/api/energy";
 import type { WindowsResponse, WindowItem } from "@/api/types";
 import { toDisplayData, formatDateLabel, computeXTicks, formatChartTick, CHART_FONT } from "@/utils/formatters";
 import { mirroredMaxWh } from "@/utils/energyFlow";
+import { fetchTouIntervals } from '@/api/tou';
+import { TOU_LABELS, touTransitions, formatTouTransition } from '@/utils/touIntervals';
 import styles from "./EnergyChart.module.css";
 
 interface Props {
@@ -34,6 +36,12 @@ const SERIES = [
 // Recharts' default bar cursor fills the whole category band, which reads as
 // another bar. Draw a thin centred line instead.
 const HOVER_CURSOR_WIDTH = 2;
+
+const TOU_BANDS = {
+  peak: { color: 'var(--orange)', opacity: 0.22 },
+  off_peak: { color: 'var(--fg-muted)', opacity: 0.16 },
+  super_off_peak: { color: 'var(--cyan)', opacity: 0.12 },
+} as const;
 
 interface HoverCursorProps {
   x?: number;
@@ -73,6 +81,61 @@ export function EnergyChart({ range, start, end, displayEnd = end, limit, onWind
     return v === 'area' || v === 'bar' ? v : 'bar';
   });
   const { data } = useAutoRefresh<WindowsResponse>(() => fetchWindows(start, end, limit), [start]);
+
+  const showTou = range === 'today' || range === '24h';
+  const { data: tou, error: touError } = useAutoRefresh<TouIntervalsResponse | null>(
+    () => showTou ? fetchTouIntervals(start, displayEnd) : Promise.resolve(null),
+    [start, displayEnd, showTou],
+  );
+  // Never reuse stale range data or cached intervals after a failed refresh.
+  const touMatchesRange = tou?.intervals?.[0]?.start === start
+    && tou?.intervals?.at(-1)?.end === displayEnd;
+  const intervals = showTou && tou && !touError && touMatchesRange ? tou.intervals : [];
+  const transitions = intervals.length && tou ? touTransitions(tou) : [];
+  const touBands = intervals.map((interval) => (
+    <ReferenceArea
+      key={`band-${interval.start}`}
+      x1={interval.start}
+      x2={interval.end}
+      ifOverflow="discard"
+      zIndex={0}
+      fill={TOU_BANDS[interval.bracket].color}
+      fillOpacity={TOU_BANDS[interval.bracket].opacity}
+      stroke="none"
+      pointerEvents="none"
+    />
+  ));
+  const touLines = transitions.map((interval) => (
+    <ReferenceLine
+      key={interval.start}
+      x={interval.start}
+      ifOverflow="discard"
+      zIndex={400}
+      stroke="var(--fg-muted)"
+      strokeOpacity={0.65}
+      strokeDasharray="3 5"
+      label={({ viewBox }) => {
+        const box = viewBox as { x: number; y: number };
+        const x = box.x + 8;
+        const y = box.y + 12;
+        return <text x={x} y={y} transform={`rotate(-90 ${x} ${y})`} textAnchor="end" fill="var(--fg-muted)" fontSize={10} fontFamily={CHART_FONT}>{TOU_LABELS[interval.bracket]}</text>;
+      }}
+      shape={({ x1, y1, x2, y2 }) => (
+        <g data-tou-transition={interval.start}>
+          <title>{formatTouTransition(interval.start, tou!.timezone, interval.bracket)}</title>
+          <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="var(--fg-muted)" strokeOpacity={0.65} strokeDasharray="3 5" />
+        </g>
+      )}
+    />
+  ));
+
+  const tooltipLabel = (value: unknown) => {
+    if (typeof value !== 'number') return String(value);
+    const label = formatChartTick(range, value);
+    const interval = showTou && tou && !touError && touMatchesRange
+      ? tou.intervals.find((item) => item.start <= value && value < item.end) : undefined;
+    return interval ? `${formatTouTransition(value, tou!.timezone, interval.bracket)} (${tou!.timezone})` : label;
+  };
 
   const windows: WindowItem[] = data ? [...data.windows] : [];
   const displayData = toDisplayData(windows);
@@ -167,6 +230,8 @@ export function EnergyChart({ range, start, end, displayEnd = end, limit, onWind
                 ticks={yTicks}
                 tickFormatter={yTickFormatter}
               />
+              {touBands}
+              {touLines}
               <ReferenceLine y={0} stroke="var(--fg-muted)" strokeDasharray="5 4" />
               <Tooltip
                 contentStyle={{
@@ -176,7 +241,7 @@ export function EnergyChart({ range, start, end, displayEnd = end, limit, onWind
                   fontFamily: CHART_FONT,
                   fontSize: "12px",
                 }}
-                labelFormatter={(v: unknown) => (typeof v === "number" ? formatChartTick(range, v) : String(v))}
+                labelFormatter={tooltipLabel}
                 formatter={formatTooltip}
               />
               {SERIES.map((s, i) => (
@@ -187,8 +252,8 @@ export function EnergyChart({ range, start, end, displayEnd = end, limit, onWind
                   dataKey={s.key}
                   stroke="none"
                   fill={s.color}
-                  fillOpacity={0.25}
-                  strokeWidth={2}
+                  fillOpacity={1}
+                  strokeWidth={0}
                   name={s.label}
                   dot={(props: unknown) => {
                     const p = props as { cx: number; cy: number; index: number };
@@ -234,6 +299,8 @@ export function EnergyChart({ range, start, end, displayEnd = end, limit, onWind
                 ticks={yTicks}
                 tickFormatter={yTickFormatter}
               />
+              {touBands}
+              {touLines}
               <ReferenceLine y={0} stroke="var(--fg-muted)" strokeDasharray="5 4" />
               <Tooltip
                 cursor={<HoverCursor />}
@@ -244,7 +311,7 @@ export function EnergyChart({ range, start, end, displayEnd = end, limit, onWind
                   fontFamily: CHART_FONT,
                   fontSize: "12px",
                 }}
-                labelFormatter={(v: unknown) => (typeof v === "number" ? formatChartTick(range, v) : String(v))}
+                labelFormatter={tooltipLabel}
                 formatter={formatTooltip}
               />
               {SERIES.map((s) => (
@@ -254,6 +321,21 @@ export function EnergyChart({ range, start, end, displayEnd = end, limit, onWind
           </ResponsiveContainer>
         )}
 
+      {intervals.length > 0 && (
+        <div className={styles.touLegend} aria-label="TOU background bands">
+          {Object.entries(TOU_BANDS).map(([bracket, band]) => (
+            <span key={bracket}>
+              <i aria-hidden="true" style={{ background: band.color, opacity: band.opacity * 3 }} />
+              {TOU_LABELS[bracket as keyof typeof TOU_LABELS]}
+            </span>
+          ))}
+        </div>
+      )}
+      {showTou && (
+        <p className={styles.hint}>
+          {tou && !touError && touMatchesRange ? `Dashed lines: TOU changes · ${tou.timezone}` : 'TOU unavailable'}
+        </p>
+      )}
       {isInspectable && (
         <p className={styles.hint}>Click a point to inspect inverters at that moment</p>
       )}

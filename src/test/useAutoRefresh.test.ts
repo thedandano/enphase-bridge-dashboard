@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 
 describe('useAutoRefresh', () => {
@@ -169,4 +169,26 @@ describe('useAutoRefresh', () => {
       expect(result.current.data).toBe('data3');
     });
   });
+});
+
+it('ignores an old-range success after the newly selected range succeeds', async () => {
+  let finish!: (value: string) => void;
+  const old = new Promise<string>((resolve) => { finish = resolve; });
+  const { result, rerender } = renderHook(({ range }) => useAutoRefresh(() => range === 'old' ? old : Promise.resolve('today'), [range]), { initialProps: { range: 'old' } });
+  rerender({ range: 'today' });
+  await waitFor(() => expect(result.current.data).toBe('today'));
+  await act(async () => { finish('old'); });
+  expect(result.current.data).toBe('today');
+});
+it('ignores an old-range failure after the newly selected range succeeds', async () => {
+  let fail!: (error: Error) => void;
+  const old = new Promise<string>((_, reject) => { fail = reject; });
+  const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  const { result, rerender } = renderHook(({ range }) => useAutoRefresh(() => range === 'old' ? old : Promise.resolve('today'), [range]), { initialProps: { range: 'old' } });
+  rerender({ range: 'today' });
+  await waitFor(() => expect(result.current.data).toBe('today'));
+  await act(async () => { fail(new Error('Old request failed')); });
+  expect(result.current.error).toBeNull();
+  expect(result.current.data).toBe('today');
+  warn.mockRestore();
 });

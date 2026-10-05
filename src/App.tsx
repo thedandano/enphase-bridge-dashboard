@@ -3,7 +3,6 @@ import { Layout } from '@/components/Layout';
 import { Header } from '@/components/Header';
 import { FlowStrip } from '@/components/FlowStrip';
 import { ChartPanel } from '@/components/ChartPanel';
-import { ArrayHealthPanel } from '@/components/ArrayHealthPanel';
 import { useDisplayPrefs } from '@/context/DisplayPrefsContext';
 import styles from './App.module.css';
 
@@ -20,11 +19,7 @@ export default function App() {
       )}
       {visibleComponents.flowStrip && <FlowStrip />}
       <ChartPanel />
-      {visibleComponents.arrayHealth && (
-        <div className={styles.panelStack}>
-          <ArrayHealthPanel />
-        </div>
-      )}
+
     </Layout>
   );
 }

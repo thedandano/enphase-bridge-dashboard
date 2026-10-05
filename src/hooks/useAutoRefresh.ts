@@ -23,27 +23,35 @@ export function useAutoRefresh<T>(
     fetchFnRef.current = fetchFn;
   });
 
+  const requestGeneration = useRef(0);
   const consecutiveErrors = useRef(0);
   const currentInterval = useRef(BASE_INTERVAL);
 
   // Stable doFetch — never recreated, reads latest fetchFn via ref.
   const doFetch = useCallback(async (onComplete?: () => void) => {
+    const generation = requestGeneration.current;
     try {
       const result = await fetchFnRef.current();
+      if (generation !== requestGeneration.current) return;
       setData(result);
       setError(null);
       consecutiveErrors.current = 0;
       currentInterval.current = BASE_INTERVAL;
     } catch (err) {
+      if (generation !== requestGeneration.current) {
+        console.warn('Refresh for a superseded view failed; current view retained', err);
+        return;
+      }
       consecutiveErrors.current += 1;
       currentInterval.current = computeInterval(consecutiveErrors.current);
       setError(err instanceof Error ? err : new Error(String(err)));
     } finally {
-      onComplete?.();
+      if (generation === requestGeneration.current) onComplete?.();
     }
   }, []); // stable — no deps
 
   useEffect(() => {
+    requestGeneration.current += 1;
     let cancelled = false;
     let tickInterval: ReturnType<typeof setInterval>;
     let remaining = currentInterval.current;
@@ -78,6 +86,7 @@ export function useAutoRefresh<T>(
     document.addEventListener('visibilitychange', onVisibilityChange);
 
     return () => {
+      requestGeneration.current += 1;
       cancelled = true;
       clearInterval(tickInterval);
       document.removeEventListener('visibilitychange', onVisibilityChange);

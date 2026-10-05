@@ -5,6 +5,7 @@ import { useDisplayPrefs } from '@/context/DisplayPrefsContext';
 import { EnergyChart } from './EnergyChart';
 import { InverterDailyTotals } from './InverterDailyTotals';
 import { InverterHeatmap } from './InverterHeatmap';
+import { ArrayHealthPanel } from './ArrayHealthPanel';
 import { TrueupPanel } from './TrueupPanel';
 import styles from './ChartPanel.module.css';
 
@@ -126,11 +127,13 @@ export function ChartPanel() {
               start={start}
               end={end}
               periodLabel={periodLabel(range, daysBack)}
+              live={range === 'today' && daysBack === 0}
             />
           )}
           {showTrueup && <TrueupPanel />}
         </div>
       )}
+      {visibleComponents.arrayHealth && <ArrayHealthPanel start={start} end={end} live={range === 'today' && daysBack === 0} periodLabel={periodLabel(range, daysBack)} />}
     </div>
   );
 }

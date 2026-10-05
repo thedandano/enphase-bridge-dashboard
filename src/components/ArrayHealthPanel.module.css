@@ -79,3 +79,18 @@
   color: var(--fg-muted);
   text-align: center;
 }
+
+.panel { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; min-width: 0; }
+.layoutHeader { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.layoutHeader h2 { margin: 0; font: 1.5rem var(--font-display); letter-spacing: 0.03em; }
+.layoutHeader p, .historyNote { margin: 4px 0; color: var(--text-secondary); font-size: 1rem; line-height: 1.5; }
+.panel > p { margin: 0; }
+.panel button:not([data-panel]):not([role=gridcell]) { min-height: 44px; padding: 8px 16px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-elevated); color: var(--text-primary); font: 1rem var(--font-ui); cursor: pointer; }
+.panel button:hover { border-color: var(--focus-ring); }
+.warning { color: var(--status-warning); }
+.arraySummaries { display: flex; flex-wrap: wrap; gap: 12px 24px; border-block: 1px solid var(--border); padding: 12px 0; }
+.savedArray { min-width: 0; }
+.savedArray h3 { font: 600 1.25rem var(--font-ui); margin: 0; overflow-wrap: anywhere; }
+.savedArray .arrayHeader { flex-wrap: wrap; gap: 12px; justify-content: flex-start; }
+.savedArray .watts { margin-left: 0; }
+@media (max-width: 600px) { .panel { padding: 12px; } .layoutHeader button { width: 100%; } }

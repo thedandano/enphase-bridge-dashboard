@@ -1,7 +1,6 @@
 import { useMemo, useState, type MouseEvent } from 'react';
 import { useAutoRefresh } from '@/hooks/useAutoRefresh';
-import { fetchSnapshots } from '@/api/inverters';
-import type { SnapshotsResponse } from '@/api/types';
+import { fetchSnapshotHistory } from '@/api/inverters';
 import {
   computeDailyTotals,
   computeMedian,
@@ -10,6 +9,7 @@ import {
   formatSignedPercent,
   type DailyTotalRow,
 } from '@/utils/inverterDailyTotals';
+import { localMidnightUnix } from '@/hooks/useTimeRange';
 import styles from './InverterDailyTotals.module.css';
 
 const UNDERPERFORM_THRESHOLD = 0.9;
@@ -23,6 +23,7 @@ interface Props {
   start: number;
   end: number;
   periodLabel: string;
+  live?: boolean;
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -62,11 +63,13 @@ interface TooltipState {
   nowSeconds: number;
 }
 
-export function InverterDailyTotals({ start, end, periodLabel }: Props) {
-  const { data } = useAutoRefresh<SnapshotsResponse>(
-    () => fetchSnapshots({ start, end, limit: 2000 }),
-    [start, end],
-  );
+export function InverterDailyTotals({ start, end, periodLabel, live = false }: Props) {
+  const rangeStart = live ? localMidnightUnix() : start;
+  const requestKey = `${rangeStart}:${live ? 'live' : end}`;
+  const { data: history, error } = useAutoRefresh(async () => ({
+    ...await fetchSnapshotHistory(rangeStart, live ? Math.floor(Date.now() / 1000) : end), key: requestKey,
+  }), [requestKey]);
+  const data = history?.key === requestKey ? history.data : null;
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
 
   const rows = useMemo(() => {
@@ -135,6 +138,8 @@ export function InverterDailyTotals({ start, end, periodLabel }: Props) {
 
   return (
     <section className={styles.section}>
+      {error && <p role="status">Inverter energy history unavailable: {error.message}</p>}
+      {history?.key === requestKey && history.incomplete && <p role="status">Inverter energy history is incomplete. Totals are partial.</p>}
       <div className={styles.header}>
         <div className={styles.titleGroup}>
           <h2 className={styles.heading}>INVERTER PERFORMANCE</h2>

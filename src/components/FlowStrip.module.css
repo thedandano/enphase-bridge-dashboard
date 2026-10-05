@@ -86,8 +86,8 @@
 
 .today {
   font-family: var(--font-ui);
-  font-size: 0.85rem;
-  color: var(--text-secondary);
+  font-size: 0.875rem;
+  color: var(--text-primary);
   letter-spacing: 0.02em;
   font-variant-numeric: tabular-nums;
   line-height: 1.2;

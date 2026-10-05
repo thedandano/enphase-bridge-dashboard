@@ -6,7 +6,8 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['coverage', 'dist', 'output']),
+  // .remember is generated agent scratch data, not application TypeScript.
+  globalIgnores(['coverage', 'dist', 'output', '.remember']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [

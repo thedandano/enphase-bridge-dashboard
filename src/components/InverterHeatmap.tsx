@@ -213,28 +213,13 @@ function HeatmapContent({ start, end, mode }: HeatmapContentProps) {
 // ── Public component ──────────────────────────────────────────────────────
 
 export function InverterHeatmap({ range, start, end }: Props) {
-  const [mode, setMode] = useState<HeatmapMode>('dayShape');
+  const mode: HeatmapMode = 'dayShape';
 
   return (
     <section className={styles.section}>
       <div className={styles.header}>
         <h2 className={styles.heading}>INVERTER HEATMAP</h2>
-        <div className={styles.modeToggle} aria-label="Heatmap mode">
-          <button
-            type="button"
-            className={mode === 'dayShape' ? styles.modeBtnActive : styles.modeBtn}
-            onClick={() => setMode('dayShape')}
-          >
-            Day shape
-          </button>
-          <button
-            type="button"
-            className={mode === 'seasonal' ? styles.modeBtnActive : styles.modeBtn}
-            onClick={() => setMode('seasonal')}
-          >
-            Seasonal
-          </button>
-        </div>
+
       </div>
       <HeatmapContent range={range} start={start} end={end} mode={mode} />
     </section>

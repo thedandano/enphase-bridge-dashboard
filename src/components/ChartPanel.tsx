@@ -1,3 +1,4 @@
+import { InverterHistoryProvider } from '@/context/InverterHistoryProvider';
 import { useState } from 'react';
 import { nextLocalMidnightUnix, useTimeRange } from '@/hooks/useTimeRange';
 import type { TimeRange } from '@/api/types';
@@ -5,6 +6,7 @@ import { useDisplayPrefs } from '@/context/DisplayPrefsContext';
 import { EnergyChart } from './EnergyChart';
 import { InverterDailyTotals } from './InverterDailyTotals';
 import { InverterHeatmap } from './InverterHeatmap';
+import { ArrayHealthPanel } from './ArrayHealthPanel';
 import { TrueupPanel } from './TrueupPanel';
 import styles from './ChartPanel.module.css';
 
@@ -63,7 +65,7 @@ export function ChartPanel() {
   };
 
   return (
-    <div className={styles.panel}>
+    <InverterHistoryProvider enabled={showInverterTotals || showInverterHeatmap || visibleComponents.arrayHealth} start={start} end={end} live={range === 'today' && daysBack === 0}><div className={styles.panel}>
       <div className={styles.controls}>
         <div className={styles.rangeGroup}>
           <div className={styles.todayGroup}>
@@ -109,7 +111,7 @@ export function ChartPanel() {
             />
           )}
           {showInverterHeatmap && (
-            <InverterHeatmap range={range} start={start} end={end} />
+            <InverterHeatmap live={range === 'today' && daysBack === 0} range={range} start={start} end={end} />
           )}
         </div>
       )}
@@ -126,11 +128,13 @@ export function ChartPanel() {
               start={start}
               end={end}
               periodLabel={periodLabel(range, daysBack)}
+              live={range === 'today' && daysBack === 0}
             />
           )}
           {showTrueup && <TrueupPanel />}
         </div>
       )}
-    </div>
+      {visibleComponents.arrayHealth && <ArrayHealthPanel start={start} end={end} live={range === 'today' && daysBack === 0} periodLabel={periodLabel(range, daysBack)} />}
+    </div></InverterHistoryProvider>
   );
 }

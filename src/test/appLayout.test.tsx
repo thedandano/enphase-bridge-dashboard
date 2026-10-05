@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import App from '@/App';
 import { DisplayPrefsProvider } from '@/context/DisplayPrefsProvider';
 
@@ -9,14 +9,14 @@ beforeEach(() => {
 });
 
 describe('App dashboard panel visibility', () => {
-  it('shows ArrayHealthPanel placeholder when both arrayHealth and trueup are visible (default)', () => {
+  it('shows ArrayHealthPanel when both arrayHealth and trueup are visible (default)', () => {
     render(
       <DisplayPrefsProvider>
         <App />
       </DisplayPrefsProvider>,
     );
-    // ArrayHealthPanel renders "Loading arrays…" since fetch never resolves
-    expect(screen.getByText('Loading arrays…')).toBeInTheDocument();
+    // Array layout entry remains visible while readings load.
+    expect(screen.getByRole('region', { name: 'Array layout' })).toBeInTheDocument();
     // TrueupPanel now renders inside ChartPanel.
     expect(screen.getByRole('heading', { name: 'TOU / True-up Estimate' })).toBeInTheDocument();
   });
@@ -28,7 +28,7 @@ describe('App dashboard panel visibility', () => {
         <App />
       </DisplayPrefsProvider>,
     );
-    expect(screen.queryByText('Loading arrays…')).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Array layout' })).toBeNull();
     // TrueupPanel still visible inside ChartPanel.
     expect(screen.getByRole('heading', { name: 'TOU / True-up Estimate' })).toBeInTheDocument();
   });
@@ -40,7 +40,7 @@ describe('App dashboard panel visibility', () => {
         <App />
       </DisplayPrefsProvider>,
     );
-    expect(screen.getByText('Loading arrays…')).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Array layout' })).toBeInTheDocument();
     // TrueupPanel heading absent, ArrayHealthPanel still renders below charts.
     expect(screen.queryByRole('heading', { name: 'TOU / True-up Estimate' })).toBeNull();
   });
@@ -53,7 +53,19 @@ describe('App dashboard panel visibility', () => {
         <App />
       </DisplayPrefsProvider>,
     );
-    expect(screen.queryByText('Loading arrays…')).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Array layout' })).toBeNull();
     expect(screen.queryByRole('heading', { name: 'TOU / True-up Estimate' })).toBeNull();
   });
+});
+
+it('keeps the array layout on the dashboard selected period', () => {
+  render(<DisplayPrefsProvider><App /></DisplayPrefsProvider>);
+  const array = screen.getByRole('region', { name: 'Array layout' });
+  expect(within(array).getByText(/TODAY · Estimated energy/)).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: '24h' }));
+  expect(within(array).getByText(/LAST 24H · Estimated energy/)).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: '←' }));
+  expect(within(array).getByText(/YESTERDAY · Estimated energy/)).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: '7d' }));
+  expect(within(array).getByText(/LAST 7 DAYS · Estimated energy/)).toBeInTheDocument();
 });

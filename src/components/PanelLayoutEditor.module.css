@@ -1,0 +1,25 @@
+.editor { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.editor h3 { margin: 0; font: 600 1.25rem var(--font-ui); }
+.editor p { margin: 8px 0 0; max-width: 65ch; line-height: 1.5; font-size: 1rem; color: var(--text-secondary); }
+.toolbar, .arrayBar, .actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.toolbar { justify-content: space-between; align-items: flex-start; }
+.editor button:not([data-panel]):not([role=gridcell]) { min-height: 44px; padding: 8px 16px; background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text-primary); border-radius: var(--radius); font: 600 1rem var(--font-ui); cursor: pointer; }
+.editor button:hover { border-color: var(--focus-ring); }
+.editor button:active { background: var(--selection); }
+.editor button.primary { background: var(--purple); color: var(--bg); }
+.editor p.error { color: var(--status-warning); }
+.editor p.status { color: var(--text-primary); min-height: 24px; }
+.tray { border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 16px 0; min-height: 100px; }
+.tray h3 span { font-size: 1rem; color: var(--text-secondary); margin-left: 8px; }
+.panels { display: flex; gap: 8px; flex-wrap: wrap; padding: 12px 4px 4px; }
+.array { min-width: 0; padding: 8px 0 20px; border-bottom: 1px solid var(--border); }
+.arrayBar { margin-bottom: 12px; }
+.arrayBar label { display: flex; flex-direction: column; gap: 4px; color: var(--text-secondary); }
+.arrayBar input { min-height: 44px; max-width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text-primary); padding: 8px; font: 1rem var(--font-ui); }
+.arrayBar input[type=number] { width: 80px; }
+@media (max-width: 600px) { .toolbar > .actions { width: 100%; } .toolbar > .actions button { flex: 1; } .arrayBar label:first-child { width: 100%; } }
+.ghost { position: fixed; z-index: 100; pointer-events: none; }
+.editor select { min-height: 44px; padding: 8px; background: var(--bg); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius); font: 1rem var(--font-ui); }
+:global(body):has(.editor[data-dragging=true]), :global(body):has(.editor[data-dragging=true]) :global(*) { cursor: none !important; }
+.ghost > div { width: 100%; height: 100%; }
+.editor [data-drag-source=true] { opacity: 0; }

@@ -1,7 +1,7 @@
 import { useMemo, useState, useCallback } from 'react';
-import { useAutoRefresh } from '@/hooks/useAutoRefresh';
-import { fetchSnapshots } from '@/api/inverters';
-import type { SnapshotsResponse, TimeRange } from '@/api/types';
+import { useInverterHistory } from '@/hooks/useInverterHistory';
+import { localMidnightUnix } from '@/hooks/useTimeRange';
+import type { TimeRange } from '@/api/types';
 import { buildHeatmapRows, buildSeasonalHeatmapRows } from '@/utils/heatmapTransform';
 import { spectrumColor } from '@/utils/spectrumColor';
 import styles from './InverterHeatmap.module.css';
@@ -16,13 +16,12 @@ interface TooltipState {
 }
 
 interface Props {
+  live?: boolean;
   range: TimeRange;
   start: number;
   end: number;
 }
 
-const SNAPSHOT_PAGE_LIMIT = 2000;
-const SNAPSHOT_CAP = 30000;
 const AXIS_SLOTS = new Set([0, 24, 48, 72]);
 type HeatmapMode = 'dayShape' | 'seasonal';
 
@@ -50,42 +49,17 @@ function seasonalAxisSlots(days: readonly number[]): Set<number> {
   ));
 }
 
-async function fetchHeatmapSnapshots(start: number, end: number): Promise<SnapshotsResponse> {
-  const snapshots: SnapshotsResponse['snapshots'][number][] = [];
-  let offset = 0;
-  let total: number | undefined;
-
-  while (offset < SNAPSHOT_CAP) {
-    const page = await fetchSnapshots({
-      start,
-      end,
-      limit: SNAPSHOT_PAGE_LIMIT,
-      offset,
-    });
-    snapshots.push(...page.snapshots);
-    total = page.total;
-    offset += page.snapshots.length;
-    if (page.snapshots.length === 0 || offset >= total) break;
-  }
-
-  return {
-    snapshots,
-    total: total ?? snapshots.length,
-    limit: snapshots.length,
-    offset: 0,
-  };
-}
-
 interface HeatmapContentProps extends Props {
   mode: HeatmapMode;
 }
 
-function HeatmapContent({ start, end, mode }: HeatmapContentProps) {
-  const { data } = useAutoRefresh<SnapshotsResponse>(
-    () => fetchHeatmapSnapshots(start, end),
-    [start],
-  );
-
+function HeatmapContent({ start, end, mode, live = false }: HeatmapContentProps) {
+  const rangeStart = live ? localMidnightUnix() : start;
+  const key = `${rangeStart}:${live ? 'live' : end}`;
+  const { data: history, error } = useInverterHistory(start, end, live);
+  const data = history?.key === key ? history.data : null;
+  const historyStart = history?.start ?? start;
+  const historyEnd = history?.end ?? end;
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
@@ -97,7 +71,7 @@ function HeatmapContent({ start, end, mode }: HeatmapContentProps) {
   const heatmap = useMemo(() => {
     if (!data) return null;
     if (mode === 'seasonal') {
-      const seasonal = buildSeasonalHeatmapRows(data.snapshots, start, end);
+      const seasonal = buildSeasonalHeatmapRows(data.snapshots, historyStart, historyEnd);
       return {
         rows: seasonal.rows,
         labels: seasonal.days.map(dateLabel),
@@ -106,12 +80,12 @@ function HeatmapContent({ start, end, mode }: HeatmapContentProps) {
       };
     }
     return {
-      rows: buildHeatmapRows(data.snapshots, start, end),
+      rows: buildHeatmapRows(data.snapshots, historyStart, historyEnd),
       labels: Array.from({ length: 96 }, (_, idx) => slotLabel(idx)),
       axisSlots: AXIS_SLOTS,
       unit: 'W avg' as const,
     };
-  }, [data, start, end, mode]);
+  }, [data, historyStart, historyEnd, mode]);
 
   const rows = useMemo(() => {
     if (!heatmap) return null;
@@ -123,23 +97,29 @@ function HeatmapContent({ start, end, mode }: HeatmapContentProps) {
     return { '--heatmap-columns': String(columns) } as React.CSSProperties;
   }, [heatmap]);
 
+  const historyMessages = <>
+    {error && <p role="alert">Heatmap refresh failed: {error.message}</p>}
+    {history?.incomplete && <p role="status">Heatmap history is incomplete.</p>}
+  </>;
+
   if (data === null) {
     return (
       <div className={styles.stateBox}>
-        <span className={styles.pulse} />
-        Loading inverter heatmap…
+        {historyMessages}
+        {!error && <><span className={styles.pulse} />Loading inverter heatmap…</>}
       </div>
     );
   }
 
   if (rows === null || rows.length === 0) {
     return (
-      <div className={styles.stateBox}>No inverter data for this range</div>
+      <div className={styles.stateBox}>{historyMessages}No inverter data for this range</div>
     );
   }
 
   return (
     <div className={styles.content} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}>
+      {historyMessages}
       {rows.map(({ serial, series, peak }) => {
         const label = serial.slice(-6);
         return (
@@ -212,7 +192,7 @@ function HeatmapContent({ start, end, mode }: HeatmapContentProps) {
 
 // ── Public component ──────────────────────────────────────────────────────
 
-export function InverterHeatmap({ range, start, end }: Props) {
+export function InverterHeatmap({ range, start, end, live = false }: Props) {
   const mode: HeatmapMode = 'dayShape';
 
   return (
@@ -221,7 +201,7 @@ export function InverterHeatmap({ range, start, end }: Props) {
         <h2 className={styles.heading}>INVERTER HEATMAP</h2>
 
       </div>
-      <HeatmapContent range={range} start={start} end={end} mode={mode} />
+      <HeatmapContent live={live} range={range} start={start} end={end} mode={mode} />
     </section>
   );
 }

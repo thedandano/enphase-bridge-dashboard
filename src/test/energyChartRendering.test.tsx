@@ -104,6 +104,9 @@ describe('TOU chart overlays', () => {
     resolveTou(tou);
     await vi.waitFor(() => expect(container.querySelectorAll('[data-tou-transition]')).toHaveLength(1));
     expect(geometry()).toEqual(before);
+    const marker = container.querySelector('[data-tou-transition]')!;
+    const series = container.querySelector('.recharts-bar')!;
+    expect(series.compareDocumentPosition(marker) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(container.querySelectorAll('.recharts-reference-area')).toHaveLength(2);
     expect(screen.getByLabelText('TOU background bands')).toBeInTheDocument();
     expect(container.querySelector('[data-tou-transition]')).toHaveAttribute('data-tou-transition', '1900');

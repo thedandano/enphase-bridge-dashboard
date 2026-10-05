@@ -50,3 +50,10 @@ export function useTimeRange(): {
   const resolvedBounds = range === 'today' ? computeBounds('today') : bounds;
   return { range, setRange, start: resolvedBounds.start, end: resolvedBounds.end, limit: RANGE_LIMITS[range] };
 }
+
+export function nextLocalMidnightUnix(start: number): number {
+  const next = new Date(start * 1000);
+  next.setDate(next.getDate() + 1);
+  next.setHours(0, 0, 0, 0);
+  return Math.floor(next.getTime() / 1000);
+}

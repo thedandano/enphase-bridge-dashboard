@@ -110,7 +110,7 @@ export function EnergyChart({ range, start, end, displayEnd = end, limit, onWind
       key={interval.start}
       x={interval.start}
       ifOverflow="discard"
-      zIndex={50}
+      zIndex={400}
       stroke="var(--fg-muted)"
       strokeOpacity={0.65}
       strokeDasharray="3 5"
@@ -134,7 +134,7 @@ export function EnergyChart({ range, start, end, displayEnd = end, limit, onWind
     const label = formatChartTick(range, value);
     const interval = showTou && tou && !touError && touMatchesRange
       ? tou.intervals.find((item) => item.start <= value && value < item.end) : undefined;
-    return interval ? `${label} · ${TOU_LABELS[interval.bracket]} (${tou!.timezone})` : label;
+    return interval ? `${formatTouTransition(value, tou!.timezone, interval.bracket)} (${tou!.timezone})` : label;
   };
 
   const windows: WindowItem[] = data ? [...data.windows] : [];

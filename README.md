@@ -148,3 +148,9 @@ The unassigned tray suggests an order from reported peak times over the previous
 Keyboard users can select a panel, Tab to the roof grid, use arrow keys to choose a cell, and press Enter or Space to place it. Escape clears selection. The upcoming orientation and returning to the tray have buttons. On touch screens, drag from anywhere on a panel; the space around panels remains scrollable. Clicking an empty cell does not move a panel.
 
 This version makes no server configuration changes. Layouts do not transfer between browsers, origins, or devices; clearing browser storage removes them. Concurrent tabs use the last successful save. Invalid saved layouts are preserved until you explicitly confirm **Reset saved layout**. Server-configured array summaries remain available until you save a browser layout.
+
+### Releases
+
+Release Please maintains a release PR against `main`. It updates the package version and changelog from conventional commits. Merge the checked release PR to create its GitHub release. The Release workflow then publishes `ghcr.io/thedandano/enphase-bridge-dashboard:v<version>` for amd64 and arm64 from the release commit. Existing main builds continue to publish `latest` and `sha-<commit>`.
+
+The workflow uses `GITHUB_TOKEN`. GitHub does not automatically start PR checks for PRs created with that token. Before merging a release PR, run CI on its exact branch with `gh workflow run ci.yml --ref <release-branch>` and wait for success. Repository Actions settings must allow GitHub Actions to create pull requests. A published image does not update a running homelab container; pull the desired version and recreate the container separately.

@@ -1,4 +1,4 @@
-import { useRef, useState, type PointerEvent } from 'react';
+import { useEffect, useRef, useState, type PointerEvent } from 'react';
 import type { InverterItem } from '@/api/types';
 import { maxPanelWatts, placePanel, removeArray, resizeArray, sharedPanelGrid, type PanelLayout, type PanelOrientation, type PanelTarget } from '@/utils/panelLayout';
 import { PanelLayoutGrid, PanelTile } from './PanelLayoutGrid';
@@ -33,6 +33,20 @@ export function PanelLayoutEditor({ draft, serials, suggestedOrder, readings, en
   const drag = useRef<Drag | null>(null);
   const [preview, setPreview] = useState<PanelTarget>(null);
   const [previewValid, setPreviewValid] = useState(false);
+  useEffect(() => {
+    const cancel = () => { drag.current = null; setPreview(null); setGhost(null); };
+    const release = (event: globalThis.PointerEvent) => {
+      if (drag.current?.pointerId === event.pointerId) cancel();
+    };
+    window.addEventListener('pointerup', release);
+    window.addEventListener('pointercancel', release);
+    window.addEventListener('blur', cancel);
+    return () => {
+      window.removeEventListener('pointerup', release);
+      window.removeEventListener('pointercancel', release);
+      window.removeEventListener('blur', cancel);
+    };
+  }, []);
   // Preserve this editing session's initial order as live inventory changes.
   const additions = serials.filter((s) => !order.includes(s));
   if (additions.length) setOrder([...order, ...additions]);
@@ -69,7 +83,7 @@ export function PanelLayoutEditor({ draft, serials, suggestedOrder, readings, en
     setMessage('Orientation locked for upcoming panels. Placed panels keep their orientation.');
   }
   function addArray() {
-    const id = crypto.randomUUID();
+    const id = [...crypto.getRandomValues(new Uint32Array(4))].map((part) => part.toString(16).padStart(8, '0')).join('');
     setActiveArray(id);
     onChange({ ...draft, grid: { columns: canvas.columns, rows: canvas.rows }, arrays: [...draft.arrays, {
       id, name: `Array ${draft.arrays.length + 1}`,
@@ -131,7 +145,7 @@ export function PanelLayoutEditor({ draft, serials, suggestedOrder, readings, en
     endDrag();
   }
   return (
-    <div className={styles.editor} data-dragging={!!ghost} onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerUp} onPointerCancel={endDrag} onLostPointerCapture={(e) => { if (e.target === e.currentTarget && drag.current?.pointerId === e.pointerId) endDrag(); }} onKeyDown={(e) => { if (e.key === 'Escape') endDrag(); }}>
+    <div className={styles.editor} data-dragging={!!ghost} onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerUp} onPointerCancel={endDrag} onLostPointerCapture={(e) => { if (e.target === e.currentTarget && drag.current?.pointerId === e.pointerId) endDrag(); }} onKeyDown={(e) => { if (e.key === 'Escape') { endDrag(); setSelected(null); } }}>
       <div className={styles.toolbar}>
         <div>
           <h3>Edit panel layout</h3>

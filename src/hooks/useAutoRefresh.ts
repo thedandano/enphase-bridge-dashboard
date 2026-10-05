@@ -11,6 +11,7 @@ function computeInterval(errorCount: number): number {
 export function useAutoRefresh<T>(
   fetchFn: () => Promise<T>,
   deps: readonly unknown[] = [],
+  enabled = true,
 ): { data: T | null; error: Error | null; secondsUntilRefresh: number } {
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<Error | null>(null);
@@ -24,12 +25,15 @@ export function useAutoRefresh<T>(
   });
 
   const requestGeneration = useRef(0);
+  const inFlight = useRef<number | null>(null);
   const consecutiveErrors = useRef(0);
   const currentInterval = useRef(BASE_INTERVAL);
 
   // Stable doFetch — never recreated, reads latest fetchFn via ref.
   const doFetch = useCallback(async (onComplete?: () => void) => {
     const generation = requestGeneration.current;
+    if (inFlight.current === generation) return;
+    inFlight.current = generation;
     try {
       const result = await fetchFnRef.current();
       if (generation !== requestGeneration.current) return;
@@ -46,12 +50,14 @@ export function useAutoRefresh<T>(
       currentInterval.current = computeInterval(consecutiveErrors.current);
       setError(err instanceof Error ? err : new Error(String(err)));
     } finally {
+      if (inFlight.current === generation) inFlight.current = null;
       if (generation === requestGeneration.current) onComplete?.();
     }
   }, []); // stable — no deps
 
   useEffect(() => {
     requestGeneration.current += 1;
+    if (!enabled) return;
     let cancelled = false;
     let tickInterval: ReturnType<typeof setInterval>;
     let remaining = currentInterval.current;
@@ -92,7 +98,7 @@ export function useAutoRefresh<T>(
       document.removeEventListener('visibilitychange', onVisibilityChange);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [doFetch, ...deps]); // doFetch is stable; deps trigger re-fetch when they change
+  }, [doFetch, enabled, ...deps]); // doFetch is stable; deps trigger re-fetch when they change
 
   return { data, error, secondsUntilRefresh };
 }

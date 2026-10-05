@@ -81,3 +81,33 @@ it('changes panel grouping without moving it or adding another grid', () => {
   expect(panel).toHaveTextContent('Array 2');
   expect(screen.getAllByRole('grid')).toHaveLength(1);
 });
+it('adds an array without secure-context UUID support', () => {
+  const uuid = vi.spyOn(crypto, 'randomUUID').mockImplementation(() => { throw new Error('secure context required'); });
+  render(<Harness />);
+  fireEvent.click(screen.getByRole('button', { name: /Add array/ }));
+  expect(screen.getByLabelText('Array for new panels')).toHaveDisplayValue('Array 2');
+  expect(uuid).not.toHaveBeenCalled();
+  uuid.mockRestore();
+});
+it('Escape clears a selected tray panel before later grid activation', () => {
+  render(<Harness />);
+  const panel = screen.getByRole('button', { name: 'Select panel A' });
+  fireEvent.click(panel);
+  fireEvent.keyDown(panel, { key: 'Escape' });
+  expect(panel).toHaveAttribute('aria-pressed', 'false');
+  fireEvent.keyDown(screen.getByRole('grid'), { key: 'Enter' });
+  expect(screen.getByRole('region', { name: 'Unassigned panels' })).toContainElement(panel);
+});
+it('releasing outside the editor clears a pending press', () => {
+  render(<Harness />);
+  function pointer(target: HTMLElement | Window, type: string, id: number) {
+    const event = new MouseEvent(type, { bubbles: true });
+    Object.defineProperty(event, 'pointerId', { value: id });
+    fireEvent(target, event);
+  }
+  pointer(screen.getByRole('button', { name: 'Select panel A' }), 'pointerdown', 1);
+  pointer(window, 'pointerup', 1);
+  pointer(screen.getByRole('button', { name: 'Select panel B' }), 'pointerdown', 2);
+  expect(screen.getByRole('button', { name: 'Select panel B' })).toHaveAttribute('aria-pressed', 'true');
+  expect(screen.getByRole('button', { name: 'Select panel A' })).toHaveAttribute('aria-pressed', 'false');
+});

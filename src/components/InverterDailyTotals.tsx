@@ -1,6 +1,5 @@
 import { useMemo, useState, type MouseEvent } from 'react';
-import { useAutoRefresh } from '@/hooks/useAutoRefresh';
-import { fetchSnapshotHistory } from '@/api/inverters';
+import { useInverterHistory } from '@/hooks/useInverterHistory';
 import {
   computeDailyTotals,
   computeMedian,
@@ -66,9 +65,7 @@ interface TooltipState {
 export function InverterDailyTotals({ start, end, periodLabel, live = false }: Props) {
   const rangeStart = live ? localMidnightUnix() : start;
   const requestKey = `${rangeStart}:${live ? 'live' : end}`;
-  const { data: history, error } = useAutoRefresh(async () => ({
-    ...await fetchSnapshotHistory(rangeStart, live ? Math.floor(Date.now() / 1000) : end), key: requestKey,
-  }), [requestKey]);
+  const { data: history, error } = useInverterHistory(start, end, live);
   const data = history?.key === requestKey ? history.data : null;
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
 

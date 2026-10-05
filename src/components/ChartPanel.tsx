@@ -1,3 +1,4 @@
+import { InverterHistoryProvider } from '@/context/InverterHistoryProvider';
 import { useState } from 'react';
 import { nextLocalMidnightUnix, useTimeRange } from '@/hooks/useTimeRange';
 import type { TimeRange } from '@/api/types';
@@ -64,7 +65,7 @@ export function ChartPanel() {
   };
 
   return (
-    <div className={styles.panel}>
+    <InverterHistoryProvider enabled={showInverterTotals || showInverterHeatmap || visibleComponents.arrayHealth} start={start} end={end} live={range === 'today' && daysBack === 0}><div className={styles.panel}>
       <div className={styles.controls}>
         <div className={styles.rangeGroup}>
           <div className={styles.todayGroup}>
@@ -110,7 +111,7 @@ export function ChartPanel() {
             />
           )}
           {showInverterHeatmap && (
-            <InverterHeatmap range={range} start={start} end={end} />
+            <InverterHeatmap live={range === 'today' && daysBack === 0} range={range} start={start} end={end} />
           )}
         </div>
       )}
@@ -134,6 +135,6 @@ export function ChartPanel() {
         </div>
       )}
       {visibleComponents.arrayHealth && <ArrayHealthPanel start={start} end={end} live={range === 'today' && daysBack === 0} periodLabel={periodLabel(range, daysBack)} />}
-    </div>
+    </div></InverterHistoryProvider>
   );
 }

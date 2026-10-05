@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useInverterHistory } from '@/hooks/useInverterHistory';
 import { useAutoRefresh } from '@/hooks/useAutoRefresh';
 import { fetchArrays, fetchSnapshotsByWindow, fetchSnapshotHistory } from '@/api/inverters';
 import type { ArraysResponse, ArraySummary, InverterItem } from '@/api/types';
@@ -63,10 +64,7 @@ interface Props { start?: number; end?: number; live?: boolean; periodLabel?: st
 export function ArrayHealthPanel({ start = localMidnightUnix(), end, live = end === undefined, periodLabel = 'TODAY' }: Props = {}) {
   const rangeStart = live ? localMidnightUnix() : start;
   const requestKey = `${rangeStart}:${live ? 'live' : end}`;
-  const { data: period, error: energyError } = useAutoRefresh(async () => {
-    const result = await fetchSnapshotHistory(rangeStart, live ? Math.floor(Date.now() / 1000) : end!);
-    return { ...result, key: requestKey };
-  }, [requestKey]);
+  const { data: period, error: energyError } = useInverterHistory(start, end ?? 0, live);
   const energyTotals = useMemo(() => period?.key === requestKey ? computeDailyTotals(period.data.snapshots) : [], [period, requestKey]);
   const incomplete = period?.key === requestKey && period.incomplete;
   const { data, error: arraysError } = useAutoRefresh<ArraysResponse>(fetchArrays);

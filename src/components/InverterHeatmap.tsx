@@ -1,7 +1,7 @@
 import { useMemo, useState, useCallback } from 'react';
-import { useAutoRefresh } from '@/hooks/useAutoRefresh';
-import { fetchSnapshotHistory } from '@/api/inverters';
-import type { SnapshotsResponse, TimeRange } from '@/api/types';
+import { useInverterHistory } from '@/hooks/useInverterHistory';
+import { localMidnightUnix } from '@/hooks/useTimeRange';
+import type { TimeRange } from '@/api/types';
 import { buildHeatmapRows, buildSeasonalHeatmapRows } from '@/utils/heatmapTransform';
 import { spectrumColor } from '@/utils/spectrumColor';
 import styles from './InverterHeatmap.module.css';
@@ -16,6 +16,7 @@ interface TooltipState {
 }
 
 interface Props {
+  live?: boolean;
   range: TimeRange;
   start: number;
   end: number;
@@ -52,13 +53,13 @@ interface HeatmapContentProps extends Props {
   mode: HeatmapMode;
 }
 
-function HeatmapContent({ start, end, mode }: HeatmapContentProps) {
-  const { data: history, error } = useAutoRefresh<{ data: SnapshotsResponse; incomplete: boolean }>(
-    () => fetchSnapshotHistory(start, end),
-    [start],
-  );
-
-  const data = history?.data ?? null;
+function HeatmapContent({ start, end, mode, live = false }: HeatmapContentProps) {
+  const rangeStart = live ? localMidnightUnix() : start;
+  const key = `${rangeStart}:${live ? 'live' : end}`;
+  const { data: history, error } = useInverterHistory(start, end, live);
+  const data = history?.key === key ? history.data : null;
+  const historyStart = history?.start ?? start;
+  const historyEnd = history?.end ?? end;
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
@@ -70,7 +71,7 @@ function HeatmapContent({ start, end, mode }: HeatmapContentProps) {
   const heatmap = useMemo(() => {
     if (!data) return null;
     if (mode === 'seasonal') {
-      const seasonal = buildSeasonalHeatmapRows(data.snapshots, start, end);
+      const seasonal = buildSeasonalHeatmapRows(data.snapshots, historyStart, historyEnd);
       return {
         rows: seasonal.rows,
         labels: seasonal.days.map(dateLabel),
@@ -79,12 +80,12 @@ function HeatmapContent({ start, end, mode }: HeatmapContentProps) {
       };
     }
     return {
-      rows: buildHeatmapRows(data.snapshots, start, end),
+      rows: buildHeatmapRows(data.snapshots, historyStart, historyEnd),
       labels: Array.from({ length: 96 }, (_, idx) => slotLabel(idx)),
       axisSlots: AXIS_SLOTS,
       unit: 'W avg' as const,
     };
-  }, [data, start, end, mode]);
+  }, [data, historyStart, historyEnd, mode]);
 
   const rows = useMemo(() => {
     if (!heatmap) return null;
@@ -191,7 +192,7 @@ function HeatmapContent({ start, end, mode }: HeatmapContentProps) {
 
 // ── Public component ──────────────────────────────────────────────────────
 
-export function InverterHeatmap({ range, start, end }: Props) {
+export function InverterHeatmap({ range, start, end, live = false }: Props) {
   const mode: HeatmapMode = 'dayShape';
 
   return (
@@ -200,7 +201,7 @@ export function InverterHeatmap({ range, start, end }: Props) {
         <h2 className={styles.heading}>INVERTER HEATMAP</h2>
 
       </div>
-      <HeatmapContent range={range} start={start} end={end} mode={mode} />
+      <HeatmapContent live={live} range={range} start={start} end={end} mode={mode} />
     </section>
   );
 }

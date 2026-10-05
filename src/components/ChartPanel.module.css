@@ -119,6 +119,7 @@
   }
 
   .performancePair > section ul {
+    max-height: none;
     flex: 1;
     overflow-y: auto;
   }

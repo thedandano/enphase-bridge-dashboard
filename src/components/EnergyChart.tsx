@@ -185,7 +185,7 @@ export function EnergyChart({ range, start, end, displayEnd = end, limit, onWind
                   type="linear"
                   stackId={s.stack}
                   dataKey={s.key}
-                  stroke={s.color}
+                  stroke="none"
                   fill={s.color}
                   fillOpacity={0.25}
                   strokeWidth={2}
@@ -201,7 +201,7 @@ export function EnergyChart({ range, start, end, displayEnd = end, limit, onWind
                         cy={p.cy}
                         r={3}
                         fill={s.color}
-                        opacity={isIncomplete ? 0.4 : 0}
+                        opacity={isIncomplete && displayData[p.index]?.[s.key] !== 0 ? 0.4 : 0}
                       />
                     );
                   }}

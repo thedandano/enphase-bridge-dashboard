@@ -70,3 +70,15 @@ describe('EnergyChart rendering', () => {
     expect(container.innerHTML).not.toMatch(/NaN|Infinity/);
   });
 });
+
+it('does not draw gray outlines or incomplete dots for zero grid contributions', async () => {
+  vi.spyOn(energy, 'fetchWindows').mockResolvedValue({ windows, total: 3, limit: 3, offset: 0 });
+  const { container } = render(<EnergyChart range="24h" start={1000} end={3700} limit={3} />);
+  fireEvent.click(screen.getByRole('button', { name: /Area/ }));
+  await vi.waitFor(() => expect(container.querySelectorAll('.recharts-area-area')).toHaveLength(4));
+  const areas = container.querySelectorAll('.recharts-area');
+  for (const index of [1, 3]) {
+    expect(areas[index].querySelector('.recharts-area-curve')).toBeNull();
+    expect([...areas[index].querySelectorAll('circle')].every((dot) => dot.getAttribute('opacity') === '0')).toBe(true);
+  }
+});

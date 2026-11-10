@@ -58,38 +58,65 @@ function tooltipFormatter(value: unknown, name: unknown) {
   return [`$${amount.toFixed(2)}`, String(name)] as [string, string];
 }
 
-function tooltipLabelFormatter(label: unknown): string {
-  return typeof label === 'number' ? formatBucketLabel(label) : '';
+// Cents matter for hour-sized buckets; whole dollars are enough for days and months.
+function formatCentsTick(value: number): string {
+  const amount = Math.abs(value);
+  return `$${amount % 1 === 0 ? amount.toFixed(0) : amount.toFixed(2)}`;
 }
+
+function formatSignedCentsTick(value: number): string {
+  return value < 0 ? `-${formatCentsTick(value)}` : formatCentsTick(value);
+}
+
+const DOLLAR_FLOOR = 1;
+// Ten cents, not one: below this the symmetric ticks round to duplicate labels.
+const CENT_FLOOR = 0.1;
 
 interface TrueupChartProps {
   points: readonly TrueupBucketPoint[];
   /** Epoch the series stops at when the range exceeded the bucket cap. */
   truncatedAt?: number | null;
+  title?: string;
+  /** Labels a bucket start on the x-axis and in the tooltip. */
+  formatLabel?: (epoch: number) => string;
+  /** Size the axes to cents instead of whole dollars, for small buckets. */
+  centsScale?: boolean;
 }
 
-export function TrueupChart({ points, truncatedAt = null }: TrueupChartProps) {
+export function TrueupChart({
+  points,
+  truncatedAt = null,
+  title = 'Cost vs credit over time',
+  formatLabel = formatBucketLabel,
+  centsScale = false,
+}: TrueupChartProps) {
   if (points.length === 0) return null;
+
+  const floor = centsScale ? CENT_FLOOR : DOLLAR_FLOOR;
+  const magnitudeTick = centsScale ? formatCentsTick : formatMagnitudeTick;
+  const signedTick = centsScale ? formatSignedCentsTick : formatSignedTick;
+  const tooltipLabelFormatter = (label: unknown) =>
+    typeof label === 'number' ? formatLabel(label) : '';
 
   const maxMagnitude = Math.max(
     ...points.flatMap((p) => [
       p.peak_cost + p.off_peak_cost + p.super_off_peak_cost,
       Math.abs(p.peak_credit + p.off_peak_credit + p.super_off_peak_credit),
     ]),
-    1,
+    floor,
   );
   const { domain, ticks } = niceSymmetricTicks(maxMagnitude);
 
   const cumulativeMagnitude = Math.max(
     ...points.map((p) => Math.abs(p.cumulative_net)),
-    1,
+    floor,
   );
   const { domain: cumulativeDomain, ticks: cumulativeTicks } =
     niceSymmetricTicks(cumulativeMagnitude);
 
   return (
     <div className={styles.chartBlock}>
-      <h3 className={styles.chartTitle}>Cost vs credit over time</h3>
+      <h3 className={styles.chartTitle}>{title}</h3>
       <ResponsiveContainer width="100%" height={280}>
         <ComposedChart
           data={points as TrueupBucketPoint[]}
@@ -98,7 +125,7 @@ export function TrueupChart({ points, truncatedAt = null }: TrueupChartProps) {
         >
           <XAxis
             dataKey="start"
-            tickFormatter={formatBucketLabel}
+            tickFormatter={formatLabel}
             tick={{ fill: 'var(--fg-muted)', fontSize: 11, fontFamily: CHART_FONT_UI }}
             stroke="var(--border)"
           />
@@ -106,7 +133,7 @@ export function TrueupChart({ points, truncatedAt = null }: TrueupChartProps) {
             yAxisId="dollars"
             domain={domain}
             ticks={ticks}
-            tickFormatter={formatMagnitudeTick}
+            tickFormatter={magnitudeTick}
             tick={{ fill: 'var(--fg-muted)', fontSize: 11, fontFamily: CHART_FONT }}
             stroke="var(--border)"
           />
@@ -118,7 +145,7 @@ export function TrueupChart({ points, truncatedAt = null }: TrueupChartProps) {
             orientation="right"
             domain={cumulativeDomain}
             ticks={cumulativeTicks}
-            tickFormatter={formatSignedTick}
+            tickFormatter={signedTick}
             tick={{ fill: 'var(--purple)', fontSize: 11, fontFamily: CHART_FONT }}
             stroke="var(--border)"
           />

@@ -192,3 +192,26 @@ it('ignores an old-range failure after the newly selected range succeeds', async
   expect(result.current.data).toBe('today');
   warn.mockRestore();
 });
+
+it('uses a longer base interval but retries a failure after 30 s', async () => {
+  vi.useFakeTimers();
+  try {
+    const fetchFn = vi.fn().mockRejectedValueOnce(new Error('blip')).mockResolvedValue('ok');
+    const { result } = renderHook(() => useAutoRefresh(fetchFn, [], true, 900));
+    await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+    expect(result.current.error?.message).toBe('blip');
+
+    await act(async () => { await vi.advanceTimersByTimeAsync(31_000); });
+    expect(fetchFn).toHaveBeenCalledTimes(2);
+    expect(result.current.data).toBe('ok');
+
+    // The countdown armed before the retry resolved fires once more, then the
+    // 900 s base takes over again.
+    await act(async () => { await vi.advanceTimersByTimeAsync(31_000); });
+    expect(fetchFn).toHaveBeenCalledTimes(3);
+    await act(async () => { await vi.advanceTimersByTimeAsync(600_000); });
+    expect(fetchFn).toHaveBeenCalledTimes(3);
+  } finally {
+    vi.useRealTimers();
+  }
+});

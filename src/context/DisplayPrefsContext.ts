@@ -5,6 +5,7 @@ export const VISIBLE_KEYS = [
   'energyChart',
   'inverterTotals',
   'arrayHealth',
+  'costTimeline',
   'trueup',
   'inverterHeatmap',
 ] as const;

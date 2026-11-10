@@ -8,6 +8,7 @@ import { InverterDailyTotals } from './InverterDailyTotals';
 import { InverterHeatmap } from './InverterHeatmap';
 import { ArrayHealthPanel } from './ArrayHealthPanel';
 import { TrueupPanel } from './TrueupPanel';
+import { CostTimelinePanel } from './CostTimelinePanel';
 import styles from './ChartPanel.module.css';
 
 const OTHER_RANGES: TimeRange[] = ['24h', '7d', '30d'];
@@ -115,25 +116,25 @@ export function ChartPanel() {
           )}
         </div>
       )}
-      {(showInverterTotals || showTrueup) && (
-        <div
-          className={
-            showInverterTotals && showTrueup
-              ? `${styles.chartPair} ${styles.performancePair}`
-              : styles.chartSingle
-          }
-        >
-          {showInverterTotals && (
-            <InverterDailyTotals
-              start={start}
-              end={end}
-              periodLabel={periodLabel(range, daysBack)}
-              live={range === 'today' && daysBack === 0}
-            />
-          )}
-          {showTrueup && <TrueupPanel />}
-        </div>
+      {showInverterTotals && (
+        <InverterDailyTotals
+          start={start}
+          end={end}
+          periodLabel={periodLabel(range, daysBack)}
+          live={range === 'today' && daysBack === 0}
+        />
       )}
+      {visibleComponents.costTimeline && (
+        <CostTimelinePanel
+          range={range}
+          start={start}
+          end={end}
+          displayEnd={displayEnd}
+          live={range === 'today' && daysBack === 0}
+          periodLabel={periodLabel(range, daysBack)}
+        />
+      )}
+      {showTrueup && <TrueupPanel />}
       {visibleComponents.arrayHealth && <ArrayHealthPanel start={start} end={end} live={range === 'today' && daysBack === 0} periodLabel={periodLabel(range, daysBack)} />}
     </div></InverterHistoryProvider>
   );

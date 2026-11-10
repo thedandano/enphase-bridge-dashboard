@@ -3,31 +3,37 @@ import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react
 const BASE_INTERVAL = 30;
 const MAX_INTERVAL = 120;
 
-function computeInterval(errorCount: number): number {
-  if (errorCount === 0) return BASE_INTERVAL;
-  return Math.min(BASE_INTERVAL * Math.pow(2, errorCount - 1), MAX_INTERVAL);
+// Retries back off from 30 s whatever the base, so a slow-refreshing caller
+// still recovers quickly from one failed fetch; the cap is the larger of 120 s
+// and the caller's own base.
+function computeInterval(errorCount: number, base: number): number {
+  if (errorCount === 0) return base;
+  return Math.min(BASE_INTERVAL * Math.pow(2, errorCount - 1), Math.max(MAX_INTERVAL, base));
 }
 
 export function useAutoRefresh<T>(
   fetchFn: () => Promise<T>,
   deps: readonly unknown[] = [],
   enabled = true,
+  baseInterval = BASE_INTERVAL,
 ): { data: T | null; error: Error | null; secondsUntilRefresh: number } {
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<Error | null>(null);
-  const [secondsUntilRefresh, setSecondsUntilRefresh] = useState(BASE_INTERVAL);
+  const [secondsUntilRefresh, setSecondsUntilRefresh] = useState(baseInterval);
 
   // Latest-ref pattern: sync via useLayoutEffect so we never write
   // to a ref during render (react-hooks/refs rule).
   const fetchFnRef = useRef(fetchFn);
+  const baseIntervalRef = useRef(baseInterval);
   useLayoutEffect(() => {
     fetchFnRef.current = fetchFn;
+    baseIntervalRef.current = baseInterval;
   });
 
   const requestGeneration = useRef(0);
   const inFlight = useRef<number | null>(null);
   const consecutiveErrors = useRef(0);
-  const currentInterval = useRef(BASE_INTERVAL);
+  const currentInterval = useRef(baseInterval);
 
   // Stable doFetch — never recreated, reads latest fetchFn via ref.
   const doFetch = useCallback(async (onComplete?: () => void) => {
@@ -40,14 +46,14 @@ export function useAutoRefresh<T>(
       setData(result);
       setError(null);
       consecutiveErrors.current = 0;
-      currentInterval.current = BASE_INTERVAL;
+      currentInterval.current = baseIntervalRef.current;
     } catch (err) {
       if (generation !== requestGeneration.current) {
         console.warn('Refresh for a superseded view failed; current view retained', err);
         return;
       }
       consecutiveErrors.current += 1;
-      currentInterval.current = computeInterval(consecutiveErrors.current);
+      currentInterval.current = computeInterval(consecutiveErrors.current, baseIntervalRef.current);
       setError(err instanceof Error ? err : new Error(String(err)));
     } finally {
       if (inFlight.current === generation) inFlight.current = null;
@@ -68,7 +74,9 @@ export function useAutoRefresh<T>(
 
       tickInterval = setInterval(() => {
         if (cancelled || document.visibilityState === 'hidden') return;
-        remaining = Math.max(0, remaining - 1);
+        // A failure can shorten the interval mid-countdown (retry sooner than a
+        // long base); honour it now rather than after the old countdown ends.
+        remaining = Math.max(0, Math.min(remaining, currentInterval.current) - 1);
         setSecondsUntilRefresh(remaining);
         if (remaining <= 0) {
           remaining = currentInterval.current;

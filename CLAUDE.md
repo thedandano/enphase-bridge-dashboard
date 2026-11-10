@@ -58,13 +58,25 @@ Each component fetches its own data via `useAutoRefresh<T>(fetchFn)` from `src/h
 - Energy Chart
 - Inverter Performance
 - Array Health
+- Cost Over Time
 - True-up
 - Inverter Heatmap
 
-`ChartPanel` pairs charts when both sides are visible:
+`ChartPanel` pairs Energy Flow beside Inverter Heatmap when both are visible. Below that,
+Inverter Performance, Cost Over Time, and True-up each get their own full-width row, in that order.
 
-- Energy Flow beside Inverter Heatmap.
-- Inverter Performance beside True-up.
+### Cost Over Time panel
+
+`CostTimelinePanel` follows the top range selector and shows grid cost and credit across the
+clock, stacked by TOU period (it reuses `TrueupChart`, `VerdictBlock`, and `PeriodGrid`).
+Buckets are aligned to the local clock: hourly for today/24h, 6-hourly for 7d, daily for 30d.
+
+It never derives per-kWh rates. `fetchCostTimeline` splits the range into slices at local month
+starts and TOU schedule changes (the bridge ranks periods per month and per schedule), fetches one
+`trueup/estimate` per slice, and shares each period's dollars across buckets by kWh share, so the
+bars add up exactly to the bridge's totals. Windows are fetched with `formula_filter=current` to
+match what the estimate prices. It refreshes every 15 minutes, since every estimate call writes a
+row on the bridge. Its refetch deps use `displayEnd`, never the live `end`.
 
 ### True-up panel
 
@@ -125,6 +137,8 @@ Energy Flow uses theme signal colors for production and consumption. Production 
 - `heatmapTransform.ts` — `buildHeatmapRows` for day-shape aggregation and `buildSeasonalHeatmapRows` for day-level aggregation
 - `inverterDailyTotals.ts` — per-inverter Wh totals, median helpers, and display formatting
 - `trueupBuckets.ts` — `chooseBucketSize` / `buildBuckets` / `toBucketPoints` for the true-up time series
+- `costTimeline.ts` — `clockBuckets` / `estimateSlices` / `buildCostTimeline` / `sumEstimates` for the Cost Over Time panel
+- `trueupEstimate.ts` — `getErrorMessage` and `TRUEUP_REFRESH_MS`, shared by both cost panels
 - `energyFlow.ts` — `solarToHomeWh` (solar serving the house directly) and `mirroredMaxWh` (Y-axis sizing for the mirrored chart)
 - `inverterColors.ts` / `spectrumColor.ts` — shared color helpers for inverter visuals
 
@@ -158,6 +172,9 @@ Unit tests cover pure helpers and hooks. Test files are one-to-one with the thin
 | `trueupPanel.test.tsx` | true-up panel behavior |
 | `trueupBuckets.test.ts` | true-up bucketing, month boundaries, truncation |
 | `trueupEstimateRange.test.ts` | true-up request range (inclusive-end shift) |
+| `costTimeline.test.ts` | clock buckets (incl. DST), estimate slices, dollar sharing |
+| `fetchCostTimeline.test.ts` | `formula_filter`, one estimate per slice, window cap |
+| `costTimelinePanel.test.tsx` | cost panel verdict, no-data and error states |
 | `solarToHome.test.ts` | `solarToHomeWh`, `mirroredMaxWh` |
 | `smoke.test.tsx` | render smoke tests (fetch stubbed to never-resolve) |
 

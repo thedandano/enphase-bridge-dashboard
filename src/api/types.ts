@@ -87,12 +87,18 @@ export interface EstimateResponse {
     off_peak: PeriodDetail;
     super_off_peak: PeriodDetail;
   };
-  tou_schedule: {
-    id: number;
-    rate_label: string;
-    effective_date: string | null;
-  };
+  tou_schedule: TouScheduleMeta;
+  /** Every schedule revision that priced part of the period. */
+  tou_schedules: TouScheduleMeta[];
   computed_at: number;
+  /** Windows in the period that the estimate left out (not priced). */
+  excluded_window_count: number;
+}
+
+export interface TouScheduleMeta {
+  id: number;
+  rate_label: string;
+  effective_date: string | null;
 }
 
 export interface TouInterval {

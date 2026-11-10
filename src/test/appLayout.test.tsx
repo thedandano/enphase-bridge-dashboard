@@ -9,6 +9,29 @@ beforeEach(() => {
 });
 
 describe('App dashboard panel visibility', () => {
+  it('stacks Inverter Performance, Cost Over Time, then True-up', () => {
+    render(
+      <DisplayPrefsProvider>
+        <App />
+      </DisplayPrefsProvider>,
+    );
+    const headings = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent ?? '');
+    const order = [/Inverter Performance/i, /Cost Over Time/, /True-up Estimate/]
+      .map((pattern) => headings.findIndex((text) => pattern.test(text)));
+    expect(order.every((i) => i >= 0)).toBe(true);
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+  });
+
+  it('hides Cost Over Time when its toggle is off', () => {
+    localStorage.setItem('displayPrefs.visible.costTimeline', 'false');
+    render(
+      <DisplayPrefsProvider>
+        <App />
+      </DisplayPrefsProvider>,
+    );
+    expect(screen.queryByRole('heading', { name: /Cost Over Time/ })).toBeNull();
+  });
+
   it('shows ArrayHealthPanel when both arrayHealth and trueup are visible (default)', () => {
     render(
       <DisplayPrefsProvider>

@@ -1,7 +1,16 @@
 import { apiFetch } from './client';
 import type { EstimateResponse, TouRefreshResponse, TouIntervalsResponse } from './types';
 import { epochToRfc3339 } from './time';
+import { fetchWindows } from './energy';
 import { validateTouIntervals } from '@/utils/touIntervals';
+import {
+  buildCostTimeline,
+  clockBuckets,
+  estimateRequestEnd,
+  estimateSlices,
+  mergeShortSlices,
+  type CostBucketStep,
+} from '@/utils/costTimeline';
 import {
   buildBuckets,
   bucketsAreTruncated,
@@ -68,6 +77,44 @@ export async function fetchTrueupSeries(
     points: toBucketPoints(buckets, estimates),
     truncatedAt: truncated ? buckets[buckets.length - 1].end : null,
   };
+}
+
+// The bridge clamps energy/windows to 2880 rows: exactly 30 days of 15-minute
+// windows, the longest range the selector offers. It reports only the rows it
+// returned, so an overflow can't be detected here; keep ranges at 30 days or less.
+const WINDOW_FETCH_LIMIT = 2880;
+
+export interface CostTimeline {
+  points: TrueupBucketPoint[];
+  estimates: EstimateResponse[];
+}
+
+// Bridge dollars shared out across clock-aligned buckets. One estimate per
+// month/schedule slice; any failure rejects the whole timeline (no silent gaps).
+// For a live range pass end === now, read once, so windows, slices and the
+// stretched live estimate all stop at the same second.
+export async function fetchCostTimeline(
+  start: number,
+  end: number,
+  step: CostBucketStep,
+  now: number = Math.floor(Date.now() / 1000),
+): Promise<CostTimeline> {
+  const [windowsResponse, tou] = await Promise.all([
+    fetchWindows(start, end, WINDOW_FETCH_LIMIT, 'current'),
+    fetchTouIntervals(start, end),
+  ]);
+  const slices = mergeShortSlices(estimateSlices(start, end, tou.intervals), now);
+  const estimates = await Promise.all(
+    slices.map((s) => fetchTrueupEstimate(s.start, estimateRequestEnd(s, now))),
+  );
+  const points = buildCostTimeline({
+    windows: windowsResponse.windows,
+    intervals: tou.intervals,
+    slices,
+    estimates,
+    bucketStarts: clockBuckets(start, end, step),
+  });
+  return { points, estimates };
 }
 
 export async function fetchTouIntervals(start: number, end: number): Promise<TouIntervalsResponse> {

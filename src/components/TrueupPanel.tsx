@@ -1,14 +1,11 @@
 import { useState, useEffect, useLayoutEffect, useRef, useCallback, useReducer } from 'react';
 import { fetchTrueupEstimate, fetchTrueupSeries, type TrueupSeries } from '@/api/tou';
-import { ApiError } from '@/api/client';
 import type { EstimateResponse, PeriodDetail } from '@/api/types';
 import { addDays } from '@/utils/trueupBuckets';
+import type { EstimateTotals } from '@/utils/costTimeline';
+import { getErrorMessage, TRUEUP_REFRESH_MS, type ErrorInfo } from '@/utils/trueupEstimate';
 import { TrueupChart } from './TrueupChart';
 import styles from './TrueupPanel.module.css';
-
-// Bridge data lands in 15-minute windows — refreshing more often than that
-// just re-requests the same numbers.
-const TRUEUP_REFRESH_MS = 15 * 60 * 1000;
 
 function dateInputToEpoch(value: string): number {
   // value is "YYYY-MM-DD"
@@ -37,30 +34,6 @@ const PINNED_START_KEY = 'trueup.pinnedStart';
 function readPinnedStart(): string | null {
   const v = localStorage.getItem(PINNED_START_KEY);
   return v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null;
-}
-
-interface ErrorInfo {
-  type: 'no_schedule' | 'no_data' | 'generic';
-  message: string;
-}
-
-function getErrorMessage(err: unknown): ErrorInfo {
-  if (err instanceof ApiError) {
-    if (err.code === 'no_tou_schedule') {
-      return {
-        type: 'no_schedule',
-        message:
-          'TOU not configured — configure OpenEI in bridge config.toml',
-      };
-    }
-    if (err.code === 'insufficient_data') {
-      return { type: 'no_data', message: 'No energy data for the selected period' };
-    }
-  }
-  return {
-    type: 'generic',
-    message: err instanceof Error ? err.message : 'Unknown error',
-  };
 }
 
 function formatUsd(amount: number): string {
@@ -123,11 +96,11 @@ function sumBreakdown(
 }
 
 interface VerdictBlockProps {
-  estimate: EstimateResponse;
+  estimate: EstimateTotals;
   rateLabel?: string;
 }
 
-function VerdictBlock({ estimate, rateLabel }: VerdictBlockProps) {
+export function VerdictBlock({ estimate, rateLabel }: VerdictBlockProps) {
   const net = estimate.net_cost_usd;
   const totalCost = sumBreakdown(estimate.breakdown, 'import_cost_usd');
   const totalCredit = sumBreakdown(estimate.breakdown, 'export_credit_usd');
@@ -185,6 +158,16 @@ function VerdictBlock({ estimate, rateLabel }: VerdictBlockProps) {
 interface PeriodCardProps {
   label: string;
   detail: PeriodDetail;
+}
+
+export function PeriodGrid({ breakdown }: { breakdown: EstimateResponse['breakdown'] }) {
+  return (
+    <div className={styles.periodGrid}>
+      <PeriodCard label="Peak" detail={breakdown.peak} />
+      <PeriodCard label="Off-Peak" detail={breakdown.off_peak} />
+      <PeriodCard label="Super Off-Peak" detail={breakdown.super_off_peak} />
+    </div>
+  );
 }
 
 function PeriodCard({ label, detail }: PeriodCardProps) {
@@ -380,11 +363,7 @@ export function TrueupPanel() {
             rateLabel={estimate.tou_schedule?.rate_label}
           />
 
-          <div className={styles.periodGrid}>
-            <PeriodCard label="Peak" detail={estimate.breakdown.peak} />
-            <PeriodCard label="Off-Peak" detail={estimate.breakdown.off_peak} />
-            <PeriodCard label="Super Off-Peak" detail={estimate.breakdown.super_off_peak} />
-          </div>
+          <PeriodGrid breakdown={estimate.breakdown} />
 
           <TrueupChart points={series.points} truncatedAt={series.truncatedAt} />
         </>

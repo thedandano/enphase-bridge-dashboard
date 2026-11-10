@@ -16,11 +16,14 @@ export function fetchWindows(
   start: number,
   end: number,
   limit: number,
+  /** 'current' matches the windows the true-up estimate prices. */
+  formulaFilter?: 'current',
 ): Promise<WindowsResponse> {
   const params = new URLSearchParams({
     start: epochToRfc3339(start),
     end: epochToRfc3339(end),
     limit: String(limit),
   });
+  if (formulaFilter) params.set('formula_filter', formulaFilter);
   return apiFetch<WindowsResponse>(`energy/windows?${params.toString()}`);
 }

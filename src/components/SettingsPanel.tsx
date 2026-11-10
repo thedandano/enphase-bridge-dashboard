@@ -11,6 +11,7 @@ const TOGGLES: { key: VisibleKey; label: string }[] = [
   { key: 'energyChart', label: 'Energy Chart' },
   { key: 'inverterTotals', label: 'Inverter Performance' },
   { key: 'arrayHealth', label: 'Array Health' },
+  { key: 'costTimeline', label: 'Cost Over Time' },
   { key: 'trueup', label: 'True-up' },
   { key: 'inverterHeatmap', label: 'Inverter Heatmap' },
 ];

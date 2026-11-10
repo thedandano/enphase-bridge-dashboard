@@ -11,6 +11,7 @@ vi.mock('@/context/DisplayPrefsContext', () => ({
       energyChart: true,
       inverterTotals: true,
       arrayHealth: true,
+      costTimeline: true,
       trueup: true,
       inverterHeatmap: true,
     },
@@ -38,6 +39,7 @@ describe('SettingsPanel', () => {
     ['Energy Chart', 'energyChart'],
     ['Inverter Performance', 'inverterTotals'],
     ['Array Health', 'arrayHealth'],
+    ['Cost Over Time', 'costTimeline'],
     ['True-up', 'trueup'],
     ['Inverter Heatmap', 'inverterHeatmap'],
   ] as const)('clicking "%s" calls toggleComponent with "%s"', (label, key) => {

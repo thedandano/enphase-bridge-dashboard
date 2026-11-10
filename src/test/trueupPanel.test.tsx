@@ -18,6 +18,8 @@ const makeEstimate = (overrides: Partial<EstimateResponse> = {}): EstimateRespon
   period_end: 1_702_592_000,
   net_cost_usd: 2.43,
   computed_at: 1_702_592_000,
+  tou_schedules: [],
+  excluded_window_count: 0,
   breakdown: {
     peak: makePeriod({ import_kwh: 0.16, export_kwh: 0.27, import_cost_usd: 0.09, export_credit_usd: 0.03 }),
     off_peak: makePeriod({ import_kwh: 4.35, export_kwh: 3.36, import_cost_usd: 2.14, export_credit_usd: 1.68 }),
